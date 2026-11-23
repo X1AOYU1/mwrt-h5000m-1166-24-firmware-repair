@@ -7,10 +7,15 @@ const sources = JSON.parse(fs.readFileSync(path.join(root, 'assets/brand-logos/s
 for (const [name, logo] of Object.entries(logos)) {
   assert.equal(logo.body, sources.brands[name].body, name + ': source mismatch');
   assert.equal(logo.viewBox, sources.brands[name].viewBox, name + ': viewBox mismatch');
+  assert.equal(logo.background,sources.brands[name].background,name+': background mismatch');
   assert(!/<script|<foreignObject|onload=|onerror=/i.test(logo.body), name + ': active content');
 }
 assert(sources.brands.Sharp.source.startsWith('https://global.sharp/'));
-assert(!logos['索尼'].body.includes('#FFFFFF'));
+assert.equal(Object.keys(logos).length,98);
+const crypto=require('node:crypto');
+for(const [name,entry] of Object.entries(sources.brands)){assert.equal(entry.provenance,'official-site',name+': unofficial');assert.equal(crypto.createHash('sha256').update(fs.readFileSync(path.join(root,entry.asset))).digest('hex'),entry.assetSha256,name+': asset hash');}
+assert(!logos['小米'].body.includes('logo__home'));
+assert(!logos.JBL.body.includes('CommerceCloud'));
 const fn = code.slice(code.indexOf('function clientArt('), code.indexOf('\nfunction findClient'));
 (async () => {
   const browser = await chromium.launch({ executablePath: process.env.BROWSER_PATH || undefined });
@@ -25,14 +30,14 @@ const fn = code.slice(code.indexOf('function clientArt('), code.indexOf('\nfunct
       const el=card.querySelector('image'), box=el.getBoundingClientRect(), frame=card.querySelector('svg').getBoundingClientRect();
       const image=new Image(); image.src=el.getAttribute('href'); await image.decode();
       const canvas=document.createElement('canvas');canvas.width=76;canvas.height=76;
-      const ctx=canvas.getContext('2d');ctx.drawImage(image,0,0,76,76);
+      const ctx=canvas.getContext('2d');const bg=card.querySelector('svg>rect').getAttribute('fill');ctx.fillStyle=bg;ctx.fillRect(0,0,76,76);const baseline=ctx.getImageData(0,0,1,1).data;ctx.drawImage(image,0,0,76,76);
       const pixels=ctx.getImageData(0,0,76,76).data;
-      let visible=0;for(let i=0;i<pixels.length;i+=4)if(pixels[i+3]>64 && Math.min(pixels[i],pixels[i+1],pixels[i+2])<230)visible++;
+      let visible=0;for(let i=0;i<pixels.length;i+=4)if(Math.max(Math.abs(pixels[i]-baseline[0]),Math.abs(pixels[i+1]-baseline[1]),Math.abs(pixels[i+2]-baseline[2]))>50)visible++;
       return {name:card.textContent,visible,contained:box.left>=frame.left && box.top>=frame.top && box.right<=frame.right && box.bottom<=frame.bottom};
     })));
-    for (const result of results) {assert(result.contained,result.name+': overflow');assert(result.visible>12,result.name+': invisible');}
     fs.mkdirSync(path.join(root,'work'),{recursive:true});
-    await page.screenshot({path:path.join(root,'work/logo-gallery.png'),fullPage:true});
+    await page.screenshot({path:path.join(root,'work/logo-gallery-v6.png'),fullPage:true});
+    for (const result of results) {assert(result.contained,result.name+': overflow');assert(result.visible>12,result.name+': invisible');}
     console.log(results.length+' brand SVGs loaded, visible and contained; source records matched.');
   } finally {await browser.close();}
 })().catch(error=>{console.error(error);process.exitCode=1});

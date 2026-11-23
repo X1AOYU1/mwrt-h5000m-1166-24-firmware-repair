@@ -52,7 +52,7 @@ with open('base.pseudo','rb') as src, open('patched.pseudo','wb') as dst:
         name = line.split(b' ',1)[0]
         if name in changes: dst.write(changes[name])
 run('mksquashfs','-','patched.root','-pf','patched.pseudo','-noappend','-comp','xz','-b','262144','-no-xattrs','-no-progress','-processors','4')
-image = out/'Mwrt-h5000m-tf-1166-24-topology-v5.bin'
+image = out/'Mwrt-h5000m-tf-1166-24-topology-v6.bin'
 with tarfile.open(base) as src, tarfile.open(image,'w',format=tarfile.GNU_FORMAT) as dst:
     for item in src:
         if item.name==rootname:

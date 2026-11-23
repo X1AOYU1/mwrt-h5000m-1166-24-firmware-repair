@@ -1,0 +1,431 @@
+{
+  "checkedAt": "2026-11-23",
+  "brands": {
+    "iQOO": {
+      "file": "iqoo.svg",
+      "source": "https://www.iqoo.com/"
+    },
+    "技嘉": {
+      "file": "gigabyte.svg",
+      "source": "https://www.gigabyte.com/"
+    },
+    "努比亚": {
+      "file": "nubia.svg",
+      "source": "https://www.nubia.com/content/dam/nubia/global/logo/nubia.svg"
+    },
+    "飞利浦": {
+      "file": "philips.svg",
+      "source": "https://www.philips.com/"
+    },
+    "任天堂": {
+      "file": "nintendo.svg",
+      "source": "https://www.nintendo.com/us/"
+    },
+    "石头": {
+      "file": "roborock.svg",
+      "source": "https://global.roborock.com/"
+    },
+    "锐捷": {
+      "file": "ruijie.svg",
+      "source": "https://www-file.ruijie.com.cn/chineseResources/UIA/news/images/logo.svg",
+      "background": "#183451"
+    },
+    "大华": {
+      "file": "dahua.svg",
+      "source": "https://materialfile.dahuasecurity.com/assets/img/footer_logo.svg",
+      "background": "#183451"
+    },
+    "佳能": {
+      "file": "canon.svg",
+      "source": "https://global.canon/01cmn/img/common/logo.svg",
+      "transform": "Keep the red Canon paths and remove the separate Global site suffix."
+    },
+    "ECS/精英": {
+      "file": "ecs.svg",
+      "source": "https://www.ecs.com.tw/images/logo-ecs-white.svg",
+      "background": "#183451"
+    },
+    "追觅": {
+      "file": "dreame.svg",
+      "source": "https://global.dreametech.com/"
+    },
+    "海康威视": {
+      "file": "hikvision.svg",
+      "source": "https://www.hikvision.com/cep/resource/resources/icons/Hikvision-Logo-R.svg"
+    },
+    "中兴": {
+      "file": "zte.png",
+      "source": "https://www.zte.com.cn/content/dam/zte-site/res-www-zte-com-cn/navigator/global/main/img/logo-en.png"
+    },
+    "POCO": {
+      "file": "poco.png",
+      "source": "https://i01.appmifile.com/webfile/globalimg/i18n/poco/POCO.png"
+    },
+    "TCL": {
+      "file": "tcl.svg",
+      "source": "https://www.tcl.com/"
+    },
+    "realme": {
+      "file": "realme.svg",
+      "source": "https://www.realme.com/"
+    },
+    "绿米/Aqara": {
+      "file": "aqara.png",
+      "source": "https://static-resource.aqara.com/img/navigation_logo.png",
+      "background": "#183451"
+    },
+    "海信": {
+      "file": "hisense.png",
+      "source": "https://www.hisense.com/cn/zh/media_1be6883b561be5bc69020348bb0d2e5aa5823dac0.png",
+      "transform": "Crop Hisense wordmark from official sponsor lockup; remove event branding without redrawing."
+    },
+    "Redmi": {
+      "file": "redmi.png",
+      "source": "https://i02.appmifile.com/mi-com-product/fly-birds/redmi-note-15-pro-plus-5g/pc/77175e9b26ca2a3b359cd35114216209.png",
+      "transform": "Crop the official REDMI wordmark from the transparent product title; preserve the original black artwork."
+    },
+    "Nothing": {
+      "file": "nothing.svg",
+      "source": "https://nothing.tech/",
+      "transform": "Outline NOTHING with the Ndot-Regular font used by the official site header.",
+      "fontSource": "https://cdn.shopify.com/oxygen-v2/43495/38485/80939/5170816/assets/Cu0AIqrM.woff"
+    },
+    "荣耀": {
+      "file": "honor.svg",
+      "source": "https://www-file.honor.com/content/dam/honor/common/logo/honor-logo-black.svg"
+    },
+    "雷蛇": {
+      "file": "razer.svg",
+      "source": "https://assets2.razerzone.com/images/phoenix/razer-ths-logo.svg",
+      "background": "#15191e"
+    },
+    "Fujifilm": {
+      "file": "fujifilm.svg",
+      "source": "https://global.fujifilm.com/themes/custom/fujifilm_com_g2/common/img/fujifilm_corporate_logo.svg"
+    },
+    "Linksys": {
+      "file": "linksys.svg",
+      "source": "https://www.linksys.com/cdn/shop/files/logo.svg?v=1714095620",
+      "background": "#183451"
+    },
+    "Nikon": {
+      "file": "nikon.svg",
+      "source": "https://www.nikon.com/etc.clientlibs/nikoncore/clientlibs/clientlib-site/resources/img/logo.svg"
+    },
+    "GL.iNet": {
+      "file": "glinet.svg",
+      "source": "https://static.gl-inet.com/www/images/press/GL-iNet_logo.svg"
+    },
+    "MikroTik": {
+      "file": "mikrotik.svg",
+      "source": "https://mikrotik.com/logo/library/logo/SVG/MT_Symbol_Black.svg"
+    },
+    "群晖": {
+      "file": "synology.png",
+      "source": "https://fileres.synology.com/images/www/company/branding/Synology_logo_Standard.zip",
+      "transform": "Crop transparent padding; retain official standard logotype colors."
+    },
+    "华为": {
+      "file": "huawei.svg",
+      "source": "https://www.huawei.com/-/media/htemplate-home/1.0.1.20251205144752/components/assets/img/favicon-logo.svg"
+    },
+    "Google": {
+      "file": "google.svg",
+      "source": "https://www.gstatic.com/images/branding/googlelogo/svg/googlelogo_clr_74x24px.svg"
+    },
+    "Shelly": {
+      "file": "shelly.svg",
+      "source": "https://www.shelly.com/cdn/shop/files/logo.svg?v=1724332310"
+    },
+    "Espressif": {
+      "file": "espressif.svg",
+      "source": "https://www.espressif.com/sites/all/themes/espressif/logo-black.svg"
+    },
+    "Sharp": {
+      "file": "sharp.svg",
+      "source": "https://global.sharp/assets/common/images/logo-sharp.svg"
+    },
+    "EPSON": {
+      "file": "epson.svg",
+      "source": "https://corporate.epson/assets/img/logo.svg"
+    },
+    "Wyze": {
+      "file": "wyze.svg",
+      "source": "https://www.wyze.com/cdn/shop/files/wyze_white_logo.svg?v=1698293459",
+      "background": "#183451"
+    },
+    "MediaTek": {
+      "file": "mediatek.svg",
+      "source": "https://www.mediatek.com/hubfs/raw_assets/public/MediaTek_Mar_2024/images/mediatek-logo.svg"
+    },
+    "Fortinet": {
+      "file": "fortinet.svg",
+      "source": "https://www.fortinet.com/content/dam/fortinet/images/general/fortinet-logo.svg"
+    },
+    "Yamaha": {
+      "file": "yamaha.svg",
+      "source": "https://www.yamaha.com/_common2/images/logo_yamaha_waves.svg"
+    },
+    "Leica": {
+      "file": "leica.svg",
+      "source": "https://leica-camera.com/themes/custom/leica_redesign_theme/logo.svg"
+    },
+    "索尼": {
+      "file": "sony.svg",
+      "source": "https://www.sony.com/en/template/2023/img/logo.svg",
+      "background": "#183451"
+    },
+    "Bose": {
+      "file": "bose.svg",
+      "source": "https://www.bose.com/on/demandware.static/Sites-Bose_US-Site/-/default/dw70a83b92/images/logo.svg"
+    },
+    "AMD": {
+      "file": "amd.svg",
+      "source": "https://www.amd.com/content/dam/code/images/header/amd-header-logo.svg",
+      "background": "#183451"
+    },
+    "威联通": {
+      "file": "qnap.png",
+      "source": "https://marketing.qnap.com/wp-content/uploads/2017/10/logo_QNAP_LOGO_K100.png"
+    },
+    "联想": {
+      "file": "lenovo.svg",
+      "source": "https://news.lenovo.com/wp-content/themes/hw-boilerplate-four-quarters/assets/images/logo-horizontal-transparent.svg",
+      "transform": "Rotate the official vertical wordmark 90 degrees to horizontal and remove the invisible canvas path; retain white artwork.",
+      "background": "#183451"
+    },
+    "Denon": {
+      "file": "denon.svg",
+      "source": "https://www.denon.com/on/demandware.static/Sites-denon_us-Site/-/default/dw8d6106c0/images/logo.svg",
+      "background": "#183451"
+    },
+    "NVIDIA": {
+      "file": "nvidia.svg",
+      "source": "https://www.nvidia.com/content/dam/en-zz/Solutions/about-nvidia/nvidia-brochure/images/nvidia-logo-black.svg"
+    },
+    "TP-Link": {
+      "file": "tplink.svg",
+      "source": "https://static.tp-link.com/assets/images/icon/logo.svg"
+    },
+    "ROG": {
+      "file": "rog.svg",
+      "source": "https://rog.asus.com/rog/nuxtStatic/img/logo-rog.svg"
+    },
+    "BlackBerry": {
+      "file": "blackberry.png",
+      "source": "https://assets.blackberry.com/f/286245462458556/799x70/94a11420fd/primary-bb-logo.png",
+      "background": "#183451",
+      "transform": "Crop the official BlackBerry symbol and wordmark, excluding the separate Secure Communications descriptor and divider."
+    },
+    "华硕": {
+      "file": "asus.svg",
+      "source": "https://www.asus.com/media/img/2017/images/n-logo-asus.svg"
+    },
+    "Fairphone": {
+      "file": "fairphone.png",
+      "source": "https://www.fairphone.com/web/image/website/2/logo?unique=0ed6ad3"
+    },
+    "Apple": {
+      "file": "apple.svg",
+      "source": "https://www.apple.com/",
+      "transform": "Extract the official navigation SVG; trim its unused canvas."
+    },
+    "惠普": {
+      "file": "hp.svg",
+      "source": "https://www.hp.com/us-en/hp-information/brandcentral.html",
+      "transform": "Official header symbol in official HP blue."
+    },
+    "Cisco": {
+      "file": "cisco.svg",
+      "source": "https://www.cisco.com/",
+      "transform": "Extract the official navigation SVG; trim its unused canvas."
+    },
+    "PlayStation": {
+      "file": "playstation.svg",
+      "source": "https://www.playstation.com/en-us/",
+      "transform": "Extract the official navigation SVG; trim its unused canvas."
+    },
+    "腾达": {
+      "file": "tenda.png",
+      "source": "https://static.tenda.com.cn/public/logo.png"
+    },
+    "Seagate": {
+      "file": "seagate.svg",
+      "source": "https://www.seagate.com/content/dam/seagate/migrated-assets/ww/redesign/assets/seagate-logo.svg"
+    },
+    "Home Assistant": {
+      "file": "homeassistant.svg",
+      "source": "https://www.home-assistant.io/images/home-assistant-logo.svg"
+    },
+    "Zyxel": {
+      "file": "zyxel.png",
+      "source": "https://www.zyxel.com/library/assets/homepage/Zyxel_Networks_logo_color.png"
+    },
+    "NETGEAR": {
+      "file": "netgear.svg",
+      "source": "https://www.netgear.com/mobify/bundle/5747/static/img/brand-logo.svg"
+    },
+    "Intel": {
+      "file": "intel.png",
+      "source": "https://www.intel.com/content/dam/logos/logo-energyblue-1x1.png"
+    },
+    "爱普生": {
+      "file": "epson.svg",
+      "source": "https://corporate.epson/assets/img/logo.svg"
+    },
+    "D-Link": {
+      "file": "dlink.svg",
+      "source": "https://www.dlink.com/en/-/media/logos/dlink/logoblue.svg"
+    },
+    "兄弟": {
+      "file": "brother.png",
+      "source": "https://global.brother/-/media/global/common/img/header/logo-brother.ashx",
+      "background": "#183451"
+    },
+    "Toshiba": {
+      "file": "toshiba.png",
+      "source": "https://www.global.toshiba/content/dam/toshiba/brand-assets/logo/logo_pc.gif"
+    },
+    "Arlo": {
+      "file": "arlo.svg",
+      "source": "https://shop-us.arlo.com/cdn/shop/files/Arlo_Wordmark_1c8b51fe-674a-4dac-96e4-044154169d54.svg?v=1745575434"
+    },
+    "Ring": {
+      "file": "ring.svg",
+      "source": "https://site-nav.ring.com/media/ring-logo.svg"
+    },
+    "小米": {
+      "file": "xiaomi.png",
+      "source": "https://i01.appmifile.com/webfile/globalimg/mobile/logo/mi.png"
+    },
+    "vivo": {
+      "file": "vivo.svg",
+      "source": "https://www.vivo.com/en/",
+      "transform": "Extract official website navigation SVG; trim unused canvas."
+    },
+    "OPPO": {
+      "file": "oppo.svg",
+      "source": "https://www.oppo.com/en/",
+      "transform": "Extract official website navigation SVG; trim unused canvas."
+    },
+    "Qualcomm": {
+      "file": "qualcomm.png",
+      "source": "https://cdn.cookielaw.org/logos/b0a5f2cc-0b29-4907-89bf-3f6b380a03c8/019b2956-bc55-75aa-8570-6d773b2bae4b/5e4f142a-c83a-4c87-9ff6-54a22a735113/1280px-Qualcomm-Logo.svg.png"
+    },
+    "JBL": {
+      "file": "jbl.png",
+      "source": "https://iprsoftwaremedia.com/214/files/202610/aa5ad9197dc4519d0adb0418cacb52ee/6ae8fb2e3d6332b497bbfad4_JBL%20Logo/JBL%20Logo_thmb.png?v=34140603-f55e-446a-af9f-02b8475a41cb"
+    },
+    "微软": {
+      "file": "microsoft.png",
+      "source": "https://uhf.microsoft.com/images/microsoft/RE1Mu3b.png"
+    },
+    "微星": {
+      "file": "msi.png",
+      "source": "https://storage-asset.msi.com/frontend/imgs/logo.png"
+    },
+    "Raspberry Pi": {
+      "file": "raspberrypi.png",
+      "source": "https://www.raspberrypi.com/app/uploads/2022/02/COLOUR-Raspberry-Pi-Symbol-Registered.png"
+    },
+    "魅族": {
+      "file": "meizu.png",
+      "source": "https://www.meizu.com/",
+      "transform": "Extract and trim the embedded official header PNG."
+    },
+    "摩托罗拉": {
+      "file": "motorola.svg",
+      "source": "https://p4-ofp.static.pub/MOTO/assets/masthead/logo_moto.6676278b2f6d8e48.svg",
+      "background": "#183451"
+    },
+    "戴尔": {
+      "file": "dell.png",
+      "source": "https://i.dell.com/is/image/DellContent/content/dam/images/logos/dell-technologies/stacked/digital/delltech-logo-stk-blue-rgb.png?wid=1346&hei=710&fit=fit"
+    },
+    "Ubiquiti": {
+      "file": "ubiquiti.svg",
+      "source": "https://www.ui.com/_next/static/media/logoUnifi.30xylfhiv1nn0.svg"
+    },
+    "大疆": {
+      "file": "dji.svg",
+      "source": "https://www-cdn.djiits.com/assets/styles/build/www.header-v4.min-b9cead8c66063dd15abdec6a75eaca25.css",
+      "transform": "Extract the official embedded header SVG."
+    },
+    "HTC": {
+      "file": "htc.svg",
+      "source": "https://www.htc.com/static/app/htc_dist/public/fonts/htc-logo.svg"
+    },
+    "VMware": {
+      "file": "vmware.svg",
+      "source": "https://blogs.vmware.com/wp-content/themes/blog-landing-0.2.10/dist/images/VMware-by-Broadcom-Logo_color.svg"
+    },
+    "SteelSeries": {
+      "file": "steelseries.png",
+      "source": "https://images.ctfassets.net/w5r1fvmogo3f/4R7Z1pJOp4yBms2ttvOAPL/d17c3d967858bfbd56ffe5887ec12173/steelseries_logo.png",
+      "background": "#183451"
+    },
+    "宏碁": {
+      "file": "acer.png",
+      "source": "https://cdn.uc.assets.prezly.com/8e51e5e9-3cc7-4029-b9bf-1990cf2b6770/-/crop/4920x1732/514,582/-/preview/-/format/auto/-/stretch/off/-/progressive/yes/-/resize/256x/-/quality/smart/Acer-logo-digital-green.png"
+    },
+    "Framework": {
+      "file": "framework.svg",
+      "source": "https://frame.work/assets/logo-c1ae78bbc66fed63092c4b9c39c0258f27ab7e2938efc03883bb1a5c73f1a632.svg",
+      "background": "#183451"
+    },
+    "科沃斯": {
+      "file": "ecovacs.png",
+      "source": "https://site-static.ecovacs.com/v4/site/logo.png"
+    },
+    "Alienware": {
+      "file": "alienware.png",
+      "source": "https://i.dell.com/is/image/DellContent/content/dam/ss2/product-images/page/campaign/alienware/gaming/aw-head-logo.png?fmt=png-alpha&wid=512"
+    },
+    "松下": {
+      "file": "panasonic.svg",
+      "source": "https://news.panasonic.com/etc/designs/panasonic/holdings/images/holdings-plogo-blue.svg"
+    },
+    "三星": {
+      "file": "samsung.png",
+      "source": "https://images.samsung.com/is/image/samsung/assets/global/about-us/brand/logo/256_144_1.png",
+      "transform": "Crop the official blue Samsung wordmark from the presentation card; retain original pixels and colors."
+    },
+    "一加": {
+      "file": "oneplus.png",
+      "source": "https://www.oneplus.com/content/dam/oneplus/2026/us/farewell/logo.png"
+    },
+    "LG": {
+      "file": "lg.svg",
+      "source": "https://www.lg.com/content/dam/lge/common/logo/logo-lg-100-44.svg"
+    },
+    "Sonos": {
+      "file": "sonos.svg",
+      "source": "https://www.sonos.com/en-gb/home"
+    },
+    "OpenWrt": {
+      "file": "openwrt.svg",
+      "source": "https://raw.githubusercontent.com/openwrt/branding/master/logo/openwrt_logo_blue_and_dark_blue.svg"
+    },
+    "Xbox": {
+      "file": "xbox.png",
+      "source": "https://uhf.microsoft.com/images/xbox/RW4ESm.png"
+    },
+    "ThinkPad": {
+      "file": "thinkpad.svg",
+      "source": "https://p1-ofp.static.pub/ShareResource/ww/img/landing-pages/thinkpad/lenovo-thinkpad-wordmark.svg",
+      "background": "#183451"
+    },
+    "Corsair": {
+      "file": "corsair.png",
+      "source": "https://cwsmgmt.corsair.com/press/CORSAIRLogo2020_stack_K.png"
+    },
+    "Kingston": {
+      "file": "kingston.svg",
+      "source": "https://www.kingston.com/Themes/KingstonRWD/images/logos/kingston-logo-blkText.svg"
+    },
+    "诺基亚": {
+      "file": "nokia.png",
+      "source": "https://raw.githubusercontent.com/nokia/.github/main/profile/assets/Nokia-logo-RGB-Bright-blue_LR.png"
+    }
+  }
+}
