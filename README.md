@@ -39,7 +39,7 @@ node tools/brand-logos-test.cjs
 
 ## 发布
 
-新版重建镜像发布在 GitHub Release `topology-2026-11-23-v3`，保留 v1/v2，附带 SHA-256 校验文件。升级前请核对设备型号、目标分区和当前固件的升级要求。
+新版重建镜像的目标 GitHub Release 为 `topology-2026-11-23-v4`，保留 v1/v2，附带 SHA-256 校验文件。升级前请核对设备型号、目标分区和当前固件的升级要求。
 
 ## v2 设备名称和品牌图标
 
@@ -58,3 +58,16 @@ node tools/brand-logos-test.cjs
 - 随机/本地管理 MAC 不用于推断整机厂商；仍可通过设备名称识别品牌。没有可用名称或型号时，详情显示“随机 MAC（无法判断厂商）”，可点击头像手动选择品牌。
 - 保留手动品牌优先级和透明、居中、不超框的 Logo；恢复自动识别后重新按设备信息判断。
 - 桌面 1440px、手机 420px 交互测试、9 组品牌识别边界用例及 78 个 SVG 加载/边界检查通过。未在 H5000M 实机上刷写验证。
+
+
+## v4 Logo audit
+
+- Replaced all 20 missing wordmark fallbacks, including Redmi and ECS/精英, with embedded colored SVG artwork.
+- Added a light translucent avatar backing plate so logos remain legible on the topology canvas while staying clipped and centered inside the original frame.
+- Added detailed vendor labels in the device details panel; topology cards keep short names.
+
+## 已识别厂商的头像兜底
+
+- 已识别厂商但未匹配内置品牌 Logo 时，生成稳定配色的厂商缩写头像。例如 Wuxi Idata Technology Company 显示 WI。此类头像是识别徽标，不是厂商官方商标。
+- 拓扑和详情使用相同头像，手动选择品牌及恢复自动识别时同步更新。随机 MAC 和手机芯片厂商仍遵循原有过滤规则。
+- 浅色半透明底板确保标志可见，图案在原头像框内居中。
