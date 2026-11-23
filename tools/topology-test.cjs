@@ -28,7 +28,7 @@ const root=path.resolve(__dirname,'..');
   [{name:'',mac:'92:8e:ab:f1:d9:46'},'随机 MAC（无法判断厂商）'],
   [{name:'',mac:'00:11:22:33:44:55'},'未识别']
  ])assert.equal(probe.vendorLabel(client),expected,JSON.stringify(client));
- for(const [client,expected] of [[{model:'Galaxy Tab S9'},'tablet'],[{name:'BRAVIA TV'},'tv'],[{name:'Nintendo Switch'},'console'],[{name:'home-router'},'router'],[{name:'Office PC'},'pc']]) assert.equal(probe.devKind(client),expected,JSON.stringify(client));
+ for(const [client,expected] of [[{model:'Galaxy Tab S9'},'tablet'],[{name:'BRAVIA TV'},'tv'],[{name:'Nintendo Switch'},'console'],[{name:'home-router'},'router'],[{name:'Office PC'},'pc'],[{friendly_name:'iPhone 16'},'phone'],[{device_name:'MacBook Pro'},'laptop'],[{client_name:'Hikvision camera'},'camera'],[{host_name:'Canon printer'},'printer']]) assert.equal(probe.devKind(client),expected,JSON.stringify(client));
  await open();await checkText('[data-b="hub:low"]','2.4G · 2 台');await checkText('[data-b="hub:high"]','5G · 1 台');await tile.click();await checkText('[data-pk="ven"]','Samsung Electronics（三星）');await checkArt();await choose('荣耀');await checkText('[data-pk="ven"]','荣耀');await checkArt();await open();await tile.click();await checkText('[data-pk="ven"]','荣耀');await choose('');await checkText('[data-pk="ven"]','Samsung Electronics（三星）');
  await loc('[data-pclose]').click();const idataTile=loc('[data-id="c:'+idata.mac+'"]');await idataTile.click();await checkText('[data-pk="ven"]',idata.vendor);await checkArt(idataTile);
  const fallback=await avatar.locator('image').getAttribute('href');assert.match(decodeURIComponent(fallback),/>WI<\/text>/);

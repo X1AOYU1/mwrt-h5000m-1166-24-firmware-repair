@@ -115,7 +115,7 @@ function modelName(m) { m = String(m || '').toLowerCase(); return MODELS[m] || (
 /* ---- 终端图标粗分 ---- */
 function devKind(c) {
   c = c || {};
-  var s = [c.name,c.vendor,c.model,c.device,c.hostname,c.manufacturer,c.product].filter(Boolean).join(' ').toLowerCase();
+  var s = [c.name,c.device_name,c.friendly_name,c.client_name,c.hostname,c.host_name,c.model,c.model_name,c.device,c.manufacturer,c.product,c.description,c.vendor].filter(Boolean).join(' ').toLowerCase();
   if (/router|gateway|access[ -]?point|mesh|路由|网关|无线接入点|ap[-_ ]?node/.test(s)) return 'router';
   if (/(^|[^a-z])tv([^a-z]|$)|电视|bravia|roku|chromecast|appletv|apple-tv|firetv/.test(s)) return 'tv';
   if (/printer|打印|laserjet|epson|canon-|brother/.test(s)) return 'printer';
@@ -252,7 +252,7 @@ function preference(c){var key=prefKey(c); if(!(key in brandPrefs)){try{brandPre
 function matchBrand(value){for(var i=0;i<brandCatalog.length;i++) if(brandCatalog[i][3].test(value||'')) return brandCatalog[i][0];return '';}
 function clientBrand(c) {
   // DHCP hostnames and model/manufacturer fields identify a device more reliably than its WiFi chipset.
-  var fields = [c.name, c.model, c.device, c.hostname, c.manufacturer, c.product];
+  var fields = [c.name,c.device_name,c.friendly_name,c.client_name,c.hostname,c.host_name,c.model,c.model_name,c.device,c.manufacturer,c.product,c.description];
   for (var i = 0; i < fields.length; i++) {
     var hit = matchBrand(fields[i]);
     if (hit) return hit;
@@ -318,7 +318,7 @@ function brandControls(c){
  function button(label,title){return '<button type="button" class="mt-choice" data-brand="'+esc(label)+'" aria-pressed="'+(chosen===label)+'">'+esc(title||label)+'</button>';}
  return '<div class="mt-brands" hidden><fieldset><legend>识别方式</legend>'+button('','自动识别')+'</fieldset><div class="mt-brand-list">'+groups.map(function(g){return '<fieldset><legend>'+esc(g)+'</legend>'+brandCatalog.filter(function(b){return b[4]===g;}).map(function(b){return button(b[0]);}).join('')+'</fieldset>';}).join('')+'</div></div>';
 }
-function clientTitle(c) { return String(c.name || '').trim() || (c.type === 'wifi' ? 'WiFi 设备' : '有线设备'); }
+function clientTitle(c) { var n=[c.name,c.device_name,c.friendly_name,c.client_name,c.hostname,c.host_name].filter(Boolean)[0]; return String(n || '').trim() || (c.type === 'wifi' ? 'WiFi 设备' : '有线设备'); }
 
 /* 出口类型 */
 var KINDS = {

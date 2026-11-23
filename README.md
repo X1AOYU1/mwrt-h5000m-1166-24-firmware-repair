@@ -39,7 +39,7 @@ node tools/brand-logos-test.cjs
 
 ## 发布
 
-新版重建镜像的目标 GitHub Release 为 `topology-2026-11-23-v4`，保留 v1/v2，附带 SHA-256 校验文件。升级前请核对设备型号、目标分区和当前固件的升级要求。
+新版重建镜像的目标 GitHub Release 为 `topology-2026-11-23-v5`，保留 v1/v2，附带 SHA-256 校验文件。升级前请核对设备型号、目标分区和当前固件的升级要求。
 
 ## v2 设备名称和品牌图标
 
@@ -65,6 +65,12 @@ node tools/brand-logos-test.cjs
 - Replaced all 20 missing wordmark fallbacks, including Redmi and ECS/精英, with embedded colored SVG artwork.
 - Added a light translucent avatar backing plate so logos remain legible on the topology canvas while staying clipped and centered inside the original frame.
 - Added detailed vendor labels in the device details panel; topology cards keep short names.
+
+## v5 按名称识别设备类型
+
+- 设备图标分类会参考 DHCP 设备名，以及数据源提供时的友好名称、主机名、型号、设备类型、厂商和产品描述，不依赖 MAC OUI。
+- 识别到名称时显示分类头像；未提供名称时保持通用联网设备图标。截图中的随机 MAC 和空设备名不足以判断具体设备，因此不能仅凭这张截图推断它是手机、电脑或其他类别。
+- 测试覆盖 iPhone、MacBook、Galaxy Tab、电视、游戏机、路由器、摄像头和打印机等名称。
 
 ## 已识别厂商的头像兜底
 
