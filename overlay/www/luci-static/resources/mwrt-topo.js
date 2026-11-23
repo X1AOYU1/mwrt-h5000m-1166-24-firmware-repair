@@ -248,13 +248,38 @@ var brandPrefs=Object.create(null);
 function prefKey(c){return 'mwrt.topo.brand.v1.'+String(c.mac).toLowerCase();}
 function preference(c){var key=prefKey(c); if(!(key in brandPrefs)){try{brandPrefs[key]=localStorage.getItem(key)||'';}catch(e){brandPrefs[key]='';}} return brandPrefs[key];}
 function matchBrand(value){for(var i=0;i<brandCatalog.length;i++) if(brandCatalog[i][3].test(value||'')) return brandCatalog[i][0];return '';}
-function brandOf(c) {
-  var selected = preference(c) || matchBrand(c.name);
-  if (selected) return selected;
+function clientBrand(c) {
+  // DHCP hostnames and model/manufacturer fields identify a device more reliably than its WiFi chipset.
+  var fields = [c.name, c.model, c.device, c.hostname, c.manufacturer, c.product];
+  for (var i = 0; i < fields.length; i++) {
+    var hit = matchBrand(fields[i]);
+    if (hit) return hit;
+  }
+  // An OUI is useful for globally administered MACs. For phones, never treat Qualcomm/MediaTek as the handset maker.
   var vendorBrand = matchBrand(c.vendor);
-  if (vendorBrand) return vendorBrand;
-  // A handset's adapter supplier does not identify the handset brand.
-  return devKind(c) === 'phone' ? '' : (c.vendor || '');
+  if (randomMac(c)) return '';
+  if (vendorBrand && !(devKind(c) === 'phone' && chipsetVendor(c.vendor))) return vendorBrand;
+  return '';
+}
+function chipsetVendor(value) {
+  return /qualcomm|mediatek|broadcom|intel|realtek|atheros|marvell/i.test(value || '');
+}
+function randomMac(c) {
+  var m = String(c && c.mac || '').replace(/[^0-9a-f]/ig, '');
+  if (!/^[0-9a-f]{12}$/i.test(m)) return false;
+  return (parseInt(m.slice(0, 2), 16) & 2) !== 0;
+}
+function brandOf(c) {
+  var selected = preference(c);
+  if (selected) return selected;
+  return clientBrand(c);
+}
+function vendorLabel(c) {
+  var brand = brandOf(c);
+  if (brand) return brand;
+  if (randomMac(c)) return '随机 MAC（无法判断厂商）';
+  if (c && c.vendor && !(devKind(c) === 'phone' && chipsetVendor(c.vendor))) return c.vendor;
+  return '未识别';
 }
 function clientArt(c,A){
  var brand=brandOf(c), logo=brandLogos[brand], content;
@@ -1327,7 +1352,7 @@ function panelFor(id, D, S) {
     var wifi = cl.type === 'wifi', kd = devKind(cl);
     title = clientTitle(cl); sub = (KIND_ZH[kd] || '设备') + (brandOf(cl) && cl.name ? ' · ' + brandOf(cl) : '');
     tag = wifi ? (levelTag(qRssi(num(cl.rssi))) || { t: 'WiFi', tn: 'good' }) : { t: '有线', tn: 'good' };
-    var rows = [RW('ip', 'IP 地址', cl.ip), RW('mac', 'MAC 地址', cl.mac), RW('ct', '连接方式', wifi ? 'WiFi 无线' : '有线以太网'), RW('pt', wifi ? '接入网络' : '接入端口', wifi ? (cl.band + (cl.guest ? ' · 访客网络' : '') + (cl.port ? ' · ' + cl.port : '')) : cl.port), RW('ven', '厂商', brandOf(cl) || '未识别'), RW('on', '在线时长', num(cl.online_s) != null ? fmtDur(cl.online_s) : null)];
+    var rows = [RW('ip', 'IP 地址', cl.ip), RW('mac', 'MAC 地址', cl.mac), RW('ct', '连接方式', wifi ? 'WiFi 无线' : '有线以太网'), RW('pt', wifi ? '接入网络' : '接入端口', wifi ? (cl.band + (cl.guest ? ' · 访客网络' : '') + (cl.port ? ' · ' + cl.port : '')) : cl.port), RW('ven', '厂商', vendorLabel(cl)), RW('on', '在线时长', num(cl.online_s) != null ? fmtDur(cl.online_s) : null)];
     secs.push({ h: '设备', rows: rows });
     if (wifi) secs.push({ h: '无线信号', rows: [MR('rssi', 'RSSI', cl.rssi, 'dBm', -100, -30, qRssi, '-100', '-30 dBm'), RW('txr', '发送速率', num(cl.tx_rate) != null ? cl.tx_rate + ' Mbps' : null), RW('rxr', '接收速率', num(cl.rx_rate) != null ? cl.rx_rate + ' Mbps' : null)] });
   } else return null;
