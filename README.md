@@ -10,7 +10,16 @@
 - SHA-256：`438b38eb1a106f200d4892b66ab33aeae0b27ec45adbd40637de8097d9333805`
 - 原始镜像保存在 GitHub Release `input-2026-11-23`。
 
-## v6 官方品牌头像
+## v7 类型头像与行为管理同步
+
+- 修正行为管理使用独立旧头像库的问题。独立页面、首页浮窗、设备列表、详情和概览设备排名共用拓扑的品牌素材与识别函数，并按不区分大小写的 MAC 合并拓扑接口返回的信息。
+- 类型识别增加行为管理的自定义名称 cname、显式设备类型与类别字段，保留设备名、主机名、型号等已有规则。测试使用真实接口能提供的 name/hostname 等字段，不以仅有模拟 model 字段作为支持依据。
+- 未命中品牌时，显示独立 SVG 类型图标，不再依赖拓扑专用样式、渐变定义或美术库。类型包括手机、平板、台式电脑、笔记本、电视、游戏机、路由器、打印机、摄像头、存储设备、音箱、智能设备。
+- 拓扑设备详情中点击头像，可选择“按设备类型显示”，也可恢复自动识别。行为管理原有类型选择在服务端确认保存成功后同步；失败时不改变头像。手动拓扑品牌/类型偏好仍限同一浏览器和同一后台地址，跨标签页同步，不代表服务器或不同浏览器间同步。
+- 已知品牌和信息不足的设备均不会虚构厂商：没有名称/类型线索时显示“未知设备”。品牌未命中并不等于能够自动判断手机或平板。当前尚未取得用户反馈设备的完整记录，不能将此次代码修正等同于该实机现象已经验证解决。
+- 保留行为管理的规则、流量配额和原有接口。拓扑接口不可用时仍可根据行为管理已有字段显示设备，避免阻塞页面。
+
+## v6 保留的官方品牌头像
 
 - 品牌目录的 98 项均采用品牌官网、官方 CDN 或官方代码库提供的图形；Nothing 使用官网字体转换为轮廓。保留官方颜色、比例和形状，单色标志保持官方单色。
 - 小米使用官网静态 Mi 标志，排除导航动画里的首页图形。JBL 使用 Harman 官方新闻页面提供的 JBL 素材。iQOO、Redmi、nubia、GIGABYTE 等均更换并复核官方素材。
@@ -36,10 +45,11 @@
 python tools/build.py C:\path\Mwrt-h5000m-tf-1166-24-20261123.bin
 ```
 
-仅替换以下四个文件：
+仅替换以下五个文件：
 
 - `usr/libexec/mwrt-clients`
 - `www/luci-static/resources/mwrt-topo.js`
+- `www/luci-static/resources/mwbehav/main.js`
 - `usr/bin/footer.htm`
 - `www/luci-static/resources/view/system/flash.js`
 
@@ -51,10 +61,13 @@ python tools/build.py C:\path\Mwrt-h5000m-tf-1166-24-20261123.bin
 node tools/embed-official-logos.cjs
 node tools/brand-logos-test.cjs
 node tools/topology-test.cjs
+node tools/device-identity-test.cjs
 ```
 
 测试覆盖 98 项来源清单和素材哈希、图片解码、相对底色的可见性、边界，以及 1440px/420px 页面上的品牌切换、恢复自动识别、头像同步、类型兜底、在线设备分组及空状态。生成的核对图位于 `work/logo-gallery-v6.png`。尚未在 H5000M 实机刷写验证；页面测试通过不等于无线驱动或中继已通过实机验证。
 
+新增 v7 测试覆盖桌面/手机尺寸的行为管理独立页面与浮窗、真实接口字段类型识别、按 MAC 合并、详情厂商、设备排名、实际点击选择、保存失败、跨标签页同步和拓扑接口故障。截图位于 `work/identity-v7-*.png`。测试前从原固件提取 `mwbehav/main.css` 和 `brands.js` 到 `work/behav/`。
+
 ## 发布
 
-输出文件为 `dist/Mwrt-h5000m-tf-1166-24-topology-v6.bin`，Release 为 `topology-2026-11-23-v6`，附带 SHA-256。历史版本保留。
+输出文件为 `dist/Mwrt-h5000m-tf-1166-24-topology-v7.bin`，Release 为 `topology-2026-11-23-v7`，附带 SHA-256。历史版本保留。
