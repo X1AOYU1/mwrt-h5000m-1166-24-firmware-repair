@@ -1,0 +1,12 @@
+{
+  "file": "Mwrt-h5000m-tf-1166-24-20261123.bin",
+  "board": "hiveton-h5000m",
+  "format": "sysupgrade-tar",
+  "size_bytes": 165151595,
+  "sha256": "438b38eb1a106f200d4892b66ab33aeae0b27ec45adbd40637de8097d9333805",
+  "members": {
+    "CONTROL": 21,
+    "kernel": 4621712,
+    "root": 160517120
+  }
+}
