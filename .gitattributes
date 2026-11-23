@@ -1,0 +1,2 @@
+# Preserve reviewed artwork bytes and SHA-256 across platforms.
+assets/brand-logos/official/* -text
