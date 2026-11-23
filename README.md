@@ -26,16 +26,27 @@
 python tools/build.py C:\path\Mwrt-h5000m-tf-1166-24-20261123.bin
 ```
 
-脚本仅替换 `usr/libexec/mwrt-clients` 和 `www/luci-static/resources/mwrt-topo.js`，保持 squashfs 的 POSIX 元数据、kernel、CONTROL 和固件兼容性元数据，并检查重打包结果。这份 Windows 构建不保留原签名，设备端是否接受以及无线驱动上的最终行为仍须在 H5000M 实机验证；不要绕过设备的签名或升级保护。
+脚本仅替换 `usr/libexec/mwrt-clients`、`www/luci-static/resources/mwrt-topo.js`、`usr/bin/footer.htm` 和 `www/luci-static/resources/view/system/flash.js`，保持 squashfs 的 POSIX 元数据、kernel、CONTROL 和固件兼容性元数据，并检查重打包结果。这份 Windows 构建不保留原签名，设备端是否接受以及无线驱动上的最终行为仍须在 H5000M 实机验证；不要绕过设备的签名或升级保护。
 
 拓扑交互回归测试使用 Playwright 和无头 Chromium：
 
 ```powershell
 node tools/topology-test.cjs
+node tools/brand-logos-test.cjs
 ```
 
 测试覆盖桌面和窄屏、频段分组/迁移、详情头像与品牌同步、自动识别恢复、设备列表和空列表。硬件测试尚未完成。
 
 ## 发布
 
-当前重建镜像发布在 GitHub Release `topology-2026-11-23-v1`，附带 SHA-256 校验文件。升级前请核对设备型号、目标分区和当前固件的升级要求。
+新版重建镜像发布在 GitHub Release `topology-2026-11-23-v2`，保留 v1，附带 SHA-256 校验文件。升级前请核对设备型号、目标分区和当前固件的升级要求。
+
+## v2 设备名称和品牌图标
+
+- 有线设备名称优先使用有效 DHCP 租约主机名、静态 DHCP 名称和 hosts 名称；取不到时显示设备类型，厂商独立展示。
+- 品牌目录包含 98 项，其中 78 项内置 SVG Logo，其余使用文字标识，未识别设备保留类型图标。
+- 2026-11-23 核对 npm 最新 Simple Icons 为 16.38.1；每项来源记录在 `assets/brand-logos/sources.json`。这不表示已逐一确认全部品牌的最新改版日期。
+- 使用品牌原色；Apple、索尼、荣耀等单色标志保留单色。华为使用官网红色渐变花瓣加 HUAWEI 字标，Google 使用官方彩色字标，夏普使用官方电子品牌字标，避免误用同名软件图标。
+- 头像背景透明，保留圆角边框；原头像框保持 56×56，Logo 在 38×38 内等比例居中（Apple 做轻微视觉重心校正），SVG 以独立图片文档内嵌，防止样式或 ID 影响其他图标；不依赖外网加载。
+- 刷写页面的默认后台地址修正为 192.168.88.1；这是提示地址修正，不覆盖用户 LAN 配置。
+- 所有品牌商标归各自权利人所有；保留来源库许可及声明。

@@ -1,0 +1,1279 @@
+<%#
+	Argon is a clean HTML5 theme for LuCI. It is based on luci-theme-material Argon Template
+
+	luci-theme-argon
+	Copyright 2020 Jerrykuku <jerrykuku@qq.com>
+
+	Have a bug? Please create an issue here on GitHub!
+	https://github.com/jerrykuku/luci-theme-argon/issues
+
+	luci-theme-material: 
+	Copyright 2015 Lutty Yang <lutty@wcan.in>
+	
+	Agron Theme
+	https://demos.creative-tim.com/argon-dashboard/index.html 
+
+	Licensed to the public under the Apache License 2.0 
+-%>
+
+<%
+local ver = require "luci.version"
+local _os_util = require "luci.util"
+-- "NRadio-鲲鹏无限" 是 C2000 系列(MAX/Ultra)专属品牌标识,其余机型(E87N/H5000M 等)
+-- 页脚"关于本机→操作系统"应显示 Mwrt-<机型名>。判据与 router3d-data / mwrt CBI 一致:
+-- 机型串是否含 C2000。机型名取 DTS model,自动适配所有非 C2000 机型。
+local function _os_rd(p)
+	local f = io.open(p, "r"); if not f then return "" end
+	local s = f:read("*a") or ""; f:close(); return s
+end
+local _os_model = _os_rd("/tmp/sysinfo/model"):gsub("^%s+", ""):gsub("%s+$", "")
+local _os_board = _os_rd("/tmp/sysinfo/board_name")
+local _os_idl = (_os_model .. " " .. _os_board):lower()
+-- N5000 同属 NRadio C2000 系列(同主板,只把模组口换成 USB3.0)
+local _os_isc2000 = _os_idl:find("c2000", 1, true) ~= nil or _os_idl:find("n5000", 1, true) ~= nil
+if _os_model == "" then _os_model = _os_board:gsub("^%s+", ""):gsub("%s+$", "") end
+if _os_model == "" then _os_model = "路由器" end
+%>
+</div>
+<footer class="mobile-hide">
+	<div>
+        <span id="osv-switch-link"></span>
+		<a class="luci-link" href="http://www.manper.me/" target="_blank">Netconner V3.0 for Mwrt</a> /
+						<a href="https://github.com/jerrykuku/luci-theme-argon" target="_blank">ArgonTheme v2.3.1</a> /
+						<%= ver.distversion %>
+		<ul class="breadcrumb pull-right" id="modemenu" style="display:none"></ul>
+	</div>
+</footer>
+</div>
+</div>
+<script>
+	// thanks for Jo-Philipp Wich <jow@openwrt.org>
+	var luciLocation = <%= luci.http.write_json(luci.dispatcher.context.path) %>;
+	var winHeight = $(window).height();
+	$(window).resize(function () {
+		var winWidth = $(window).width()
+		if(winWidth < 600){
+			var newHeight = $(this).height();
+			var keyboradHeight = newHeight - winHeight;
+			$(".ftc").css("bottom", keyboradHeight + 30);
+		}
+	})
+</script>
+<script type="text/javascript">L.require('menu-mwrt')</script>
+<!-- 覆盖层HTML（初始隐藏） -->
+<div id="global_msg_overlay" style="
+    position:fixed;
+    top:0; left:0; right:0; bottom:0;
+    width:100vw; height:100vh;
+    background:rgba(0,0,0,0.55);
+    z-index:99999;
+    display:none;
+    align-items:center;
+    justify-content:center;
+    transition:opacity 0.4s;
+    opacity:0;
+    backdrop-filter: blur(7px); /* 黑色虚化 */
+">
+  <div id="global_msg_content" style="
+      background:rgba(0,0,0,0.0); /* 纯虚化，无白色背景 */
+      border-radius:0;
+      padding:40px 36px;
+      color:#fff;
+      font-family: 'Segoe UI', 'PingFang SC', 'Microsoft Yahei', Arial, Helvetica, sans-serif;
+      font-size:2rem;
+      font-weight:700;
+      letter-spacing:0.12em;
+      box-shadow:none;
+      max-width:90vw;
+      max-height:80vh;
+      overflow:auto;
+      text-align:center;
+      text-shadow: 0 1px 8px rgba(0,0,0,0.25);
+      line-height:1.65;
+  "></div>
+</div>
+<script type="text/javascript">
+function showAk68Overlay() {
+    let overlay = document.getElementById("ak68_overlay");
+    if (overlay) overlay.remove();
+
+    overlay = document.createElement("div");
+    overlay.id = "ak68_overlay";
+    overlay.style.cssText = `
+        position:fixed;
+        top:0;left:0;right:0;bottom:0;
+        background:rgba(0,0,0,0.4);
+        backdrop-filter:blur(8px);
+        z-index:999999;
+        display:flex;
+        align-items:center;
+        justify-content:center;
+        opacity:0;
+        transition:opacity 1s ease;
+    `;
+
+    const canvas = document.createElement("canvas");
+    canvas.width = window.innerWidth;
+    canvas.height = window.innerHeight;
+    overlay.appendChild(canvas);
+    document.body.appendChild(overlay);
+
+    const ctx = canvas.getContext("2d");
+    const W = canvas.width, H = canvas.height;
+
+    const easeInOutQuad = t => t < 0.5
+        ? 2 * t * t
+        : 1 - Math.pow(-2 * t + 2, 2) / 2;
+
+    // 尺寸定义
+    const cableBody = 180;
+    const headWidth = 15; // 缩小很多
+    const portWidth = 0;
+    const slotOffset = 10; // 插槽距离外壳边缘
+    const connectY = H / 2 - 40;
+
+    function drawCable(x, y) {
+        // 线体
+        let grad = ctx.createLinearGradient(x, y, x + cableBody, y);
+        grad.addColorStop(0, "#2874a6");
+        grad.addColorStop(1, "#5dade2");
+        ctx.fillStyle = grad;
+        ctx.fillRect(x, y + 30, cableBody, 20);
+
+        // 接头
+        let headGrad = ctx.createLinearGradient(x + cableBody, y + 10, x + cableBody + headWidth, y + 70);
+        headGrad.addColorStop(0, "rgba(255,255,255,0.85)");
+        headGrad.addColorStop(1, "rgba(200,200,200,0.55)");
+        ctx.fillStyle = headGrad;
+        ctx.fillRect(x + cableBody, y + 10, headWidth, 60);
+
+        // 金属触点
+        ctx.fillStyle = "#f1c40f";
+        for (let i = 0; i < 4; i++) {
+            ctx.fillRect(x + cableBody + 3 + i * 3, y + 20, 2, 20);
+        }
+
+        ctx.strokeStyle = "rgba(0,0,0,0.2)";
+        ctx.strokeRect(x + cableBody, y + 10, headWidth, 60);
+    }
+
+    function drawPort(x, y) {
+        // 外壳
+        let shellGrad = ctx.createLinearGradient(x, y, x + portWidth, y);
+        shellGrad.addColorStop(0, "#444");
+        shellGrad.addColorStop(1, "#888");
+        ctx.fillStyle = shellGrad;
+        ctx.fillRect(x, y, portWidth, 80);
+
+        // 插槽
+        let slotGrad = ctx.createLinearGradient(x + slotOffset, y + 20, x + portWidth - slotOffset, y + 60);
+        slotGrad.addColorStop(0, "#111");
+        slotGrad.addColorStop(1, "#333");
+        ctx.fillStyle = slotGrad;
+        ctx.fillRect(x + slotOffset, y + 20, 130, 40);
+
+        // 金属针脚
+        ctx.fillStyle = "#ffb300";
+        for (let i = 0; i < 8; i++) {
+            ctx.fillRect(x + slotOffset + 5 + i * 15, y + 25, 10, 5);
+        }
+    }
+
+    // 位置计算
+    const cableStartX = - (cableBody + headWidth);
+    const portStartX = W + portWidth;
+
+    // 精准对接位置
+    const cableEndX = W / 2 - (cableBody + headWidth - slotOffset);
+    const portEndX = W / 2 - portWidth / 2;
+
+    let startTime = null;
+    let phase = 0;
+    let textAlpha = 0;
+    let cableX = cableStartX;
+    let portX = portStartX;
+
+    const fadeOutDuration = 1500; // 1.5秒淡出
+
+    function drawFrame(ts) {
+        if (!startTime) startTime = ts;
+        const elapsed = ts - startTime;
+
+        ctx.clearRect(0, 0, W, H);
+
+        if (phase === 0) {
+            overlay.style.opacity = 1;
+            // 对接动画 2s
+            const t = Math.min(1, elapsed / 2000);
+            const posT = easeInOutQuad(t);
+            cableX = cableStartX + (cableEndX - cableStartX) * posT;
+            portX = portStartX + (portEndX - portStartX) * posT;
+            drawPort(portX, connectY);
+            drawCable(cableX, connectY);
+            if (t >= 1) {
+                phase = 1;
+                startTime = ts;
+            }
+        }
+        else if (phase === 1) {
+            // 停留 3s
+            drawPort(portEndX, connectY);
+            drawCable(cableEndX, connectY);
+            textAlpha = Math.min(1, textAlpha + 0.02);
+            ctx.save();
+            ctx.globalAlpha = textAlpha;
+            ctx.font = 'bold 36px "Microsoft YaHei"';
+            ctx.fillStyle = "#fff";
+            ctx.textAlign = "center";
+            ctx.fillText("AK68定向天线已连接", W / 2, H / 2 - 100);
+            ctx.restore();
+            if (elapsed >= 3000) {
+                phase = 2;
+                startTime = ts;
+            }
+        }
+        else if (phase === 2) {
+            // 平滑淡出 1.5s
+            const fadeT = Math.min(1, elapsed / fadeOutDuration);
+            overlay.style.opacity = 1 - fadeT;
+            drawPort(portEndX, connectY);
+            drawCable(cableEndX, connectY);
+            if (fadeT >= 1) {
+                overlay.remove();
+                return;
+            }
+        }
+
+        requestAnimationFrame(drawFrame);
+    }
+
+    // 淡入开始
+    overlay.style.opacity = 0;
+    setTimeout(() => {
+        overlay.style.opacity = 1;
+    }, 0);
+
+    requestAnimationFrame(drawFrame);
+}
+
+(function(){
+    var overlay = document.getElementById('global_msg_overlay');
+    var content = document.getElementById('global_msg_content');
+    var fadeDuration = 400; // ms 动画时长
+    var pollingInterval = 1000; // ms 轮询间隔
+    var isShowing = false;
+    var timer = null;
+    var hideTimer = null;
+    function showOverlay(msg, sec, color) {
+        var isRestore = msg && msg.indexOf('系统正在还原配置分区') !== -1;
+        if (isRestore) {
+            /* 刷写/重置过程画面: 路由器收固件的动画 + 四步进度 + 倒计时。进度是按预计时长推算的, 设备端没有真实进度可读 */
+            var lanIp = "192.168.88.1";
+            if (!document.getElementById('mwf-css')) {
+                var mwfStyle = document.createElement('style');
+                mwfStyle.id = 'mwf-css';
+                mwfStyle.textContent = ".mwf{position:relative;overflow:hidden;box-sizing:border-box;margin:0 auto;padding:20px 18px 16px;border-radius:16px;text-align:center;color:#e8ecff;background:linear-gradient(165deg,#161d40,#0b0f24);border:1px solid rgba(255,255,255,.1);box-shadow:0 14px 40px rgba(0,0,0,.4);font:400 14px/1.5 -apple-system,BlinkMacSystemFont,\"PingFang SC\",\"Microsoft YaHei\",sans-serif;letter-spacing:0;text-shadow:none}.mwf:before{content:\"\";position:absolute;left:50%;top:-50px;width:360px;height:220px;margin-left:-180px;background:radial-gradient(closest-side,rgba(79,140,255,.3),transparent);pointer-events:none}.mwf>*{position:relative}.mwf-big{width:min(580px,92vw);padding:28px 28px 22px}.mwf-scene{width:230px;max-width:70%;margin:0 auto}.mwf-big .mwf-scene{width:270px}.mwf-svg{display:block;width:100%;height:auto;overflow:visible}.mwf-shadow{fill:rgba(0,0,0,.35)}.mwf-ant path{stroke:#5a6697;stroke-width:4;stroke-linecap:round;fill:none}.mwf-ant circle{fill:#8dbbff}.mwf-w1,.mwf-w2{fill:none;stroke:#8dbbff;stroke-width:1.6;opacity:0;transform-box:fill-box;transform-origin:center;animation:mwf-wave 2.2s ease-out infinite}.mwf-w2{animation-delay:1.1s}.mwf-slot{fill:#8dbbff;animation:mwf-slot 1.2s ease-in-out infinite}.mwf-led{opacity:.9;animation:mwf-led 1.2s ease-in-out infinite}.mwf-led.l1{fill:#34d399;animation-duration:.7s}.mwf-led.l2{fill:#34d399;animation-delay:.2s}.mwf-led.l3{fill:#fbbf24;animation-delay:.4s}.mwf-led.l4{fill:#60a5fa;animation-delay:.6s}.mwf-pk{opacity:0;animation:mwf-drop 2.4s cubic-bezier(.45,0,.9,.6) infinite}.mwf-pk:nth-child(2){animation-delay:.8s}.mwf-pk:nth-child(3){animation-delay:1.6s}@keyframes mwf-drop{0%{transform:translateY(-8px);opacity:0}15%{opacity:1}100%{transform:translateY(60px);opacity:1}}@keyframes mwf-led{0%,100%{opacity:.25}50%{opacity:1}}@keyframes mwf-slot{0%,100%{opacity:.35}50%{opacity:1}}@keyframes mwf-wave{0%{opacity:0;transform:scale(.5)}30%{opacity:.85}100%{opacity:0;transform:scale(1.8)}}@keyframes mwf-pulse{0%,100%{box-shadow:0 0 0 0 rgba(141,187,255,.6)}50%{box-shadow:0 0 0 7px rgba(141,187,255,0)}}@keyframes mwf-shine{to{transform:translateX(100%)}}.mwf-t{margin-top:8px;font-size:19px;font-weight:700;color:#fff}.mwf-big .mwf-t{font-size:21px}.mwf-s{margin:4px auto 0;max-width:430px;font-size:12.5px;color:rgba(255,255,255,.62)}.mwf-steps{display:flex;max-width:440px;margin:18px auto 4px}.mwf-st{flex:1;position:relative;font-size:12px;color:rgba(255,255,255,.45)}.mwf-st i{position:relative;z-index:1;display:grid;place-items:center;width:24px;height:24px;margin:0 auto 5px;border-radius:50%;border:2px solid rgba(255,255,255,.25);background:#10152e;font-style:normal;font-size:12px;font-weight:600}.mwf-st:not(:last-child):after{content:\"\";position:absolute;top:11px;left:50%;width:100%;height:2px;background:rgba(255,255,255,.18)}.mwf-st.done{color:rgba(255,255,255,.75)}.mwf-st.done i{background:#34d399;border-color:#34d399;color:#06251a}.mwf-st.done:after{background:#34d399!important}.mwf-st.act{color:#fff}.mwf-st.act i{border-color:#8dbbff;color:#fff;animation:mwf-pulse 1.4s ease-in-out infinite}.mwf-bw{max-width:440px;margin:14px auto 0}.mwf-bar{height:8px;border-radius:99px;background:rgba(255,255,255,.12);overflow:hidden}.mwf-fill{position:relative;height:100%;width:0;border-radius:99px;background:linear-gradient(90deg,#4f8cff,#22d3ee);transition:width .4s linear;overflow:hidden}.mwf-fill:after{content:\"\";position:absolute;top:0;left:0;right:0;bottom:0;background:linear-gradient(100deg,transparent 30%,rgba(255,255,255,.55) 50%,transparent 70%);transform:translateX(-100%);animation:mwf-shine 1.6s linear infinite}.mwf-meta{display:flex;justify-content:space-between;margin-top:6px;font-size:12px;color:rgba(255,255,255,.6);font-variant-numeric:tabular-nums}.mwf-meta b{color:#fff;font-weight:600}.mwf-el{margin-top:10px;font-size:12px;color:rgba(255,255,255,.6);font-variant-numeric:tabular-nums}.mwf-el b{color:#fff;font-weight:600}.mwf-warn{display:inline-flex;align-items:center;gap:7px;margin-top:14px;padding:6px 14px;border-radius:99px;font-size:13px;font-weight:600;color:#fbbf24;background:rgba(251,191,36,.12);border:1px solid rgba(251,191,36,.35)}.mwf-warn:before{content:\"!\";display:grid;place-items:center;width:16px;height:16px;border-radius:50%;background:#fbbf24;color:#2a1c00;font-size:11px;font-weight:800}.mwf-info{display:flex;flex-wrap:wrap;justify-content:center;gap:10px;margin-top:14px}.mwf-chip{min-width:128px;padding:8px 14px;border-radius:12px;background:rgba(255,255,255,.07);border:1px solid rgba(255,255,255,.1)}.mwf-chip small{display:block;font-size:11px;color:rgba(255,255,255,.5)}.mwf-chip b{font-size:15px;font-weight:600;letter-spacing:.3px;color:#9bd1ff;-webkit-user-select:all;user-select:all}.mwf-tip{margin-top:12px;font-size:12px;color:rgba(255,255,255,.5)}.mwf-tip kbd{display:inline-block;padding:0 5px;border-radius:4px;border:1px solid rgba(255,255,255,.25);background:rgba(255,255,255,.08);font:inherit;font-size:11px;color:#dbe4ff}@media (prefers-reduced-motion:reduce){.mwf *,.mwf *:after{animation:none!important}.mwf-pk:nth-child(1){opacity:1;transform:translateY(26px)}.mwf-slot{opacity:.8}.mwf-led{opacity:.9}}";
+                document.head.appendChild(mwfStyle);
+            }
+            overlay.style.background = 'radial-gradient(ellipse at 50% 28%,rgba(36,48,108,0.94),rgba(4,7,18,0.98) 72%)';
+            overlay.style.backdropFilter = 'blur(10px)';
+            overlay.style.display = 'flex';
+            overlay.style.alignItems = 'center';
+            overlay.style.justifyContent = 'center';
+            overlay.style.overflowY = 'auto';
+            content.style.background = 'none';
+            content.style.borderRadius = '0';
+            content.style.padding = '16px 0';
+            content.style.boxShadow = 'none';
+            content.style.width = 'auto';
+            content.style.maxWidth = 'none';
+            content.style.color = '#fff';
+            content.style.fontSize = '14px';
+            content.style.fontWeight = '400';
+            content.style.letterSpacing = '0';
+            content.style.textAlign = 'center';
+            content.style.textShadow = 'none';
+            content.innerHTML =
+                '<div class="mwf mwf-big">' +
+                    '<div class="mwf-scene">' + "<svg class=\"mwf-svg\" viewBox=\"0 0 220 132\" aria-hidden=\"true\"><defs><linearGradient id=\"mwfb\" x1=\"0\" y1=\"0\" x2=\"0\" y2=\"1\"><stop offset=\"0\" stop-color=\"#3b4673\"/><stop offset=\"1\" stop-color=\"#1c2240\"/></linearGradient><linearGradient id=\"mwfp\" x1=\"0\" y1=\"0\" x2=\"1\" y2=\"1\"><stop offset=\"0\" stop-color=\"#8dbbff\"/><stop offset=\"1\" stop-color=\"#4f6bff\"/></linearGradient></defs><ellipse class=\"mwf-shadow\" cx=\"110\" cy=\"121\" rx=\"80\" ry=\"6\"/><g class=\"mwf-ant\"><path d=\"M62 76L50 36\"/><path d=\"M158 76L170 36\"/><circle cx=\"50\" cy=\"34\" r=\"3.6\"/><circle cx=\"170\" cy=\"34\" r=\"3.6\"/></g><circle class=\"mwf-w1\" cx=\"50\" cy=\"34\" r=\"9\"/><circle class=\"mwf-w2\" cx=\"50\" cy=\"34\" r=\"9\"/><circle class=\"mwf-w1\" cx=\"170\" cy=\"34\" r=\"9\"/><circle class=\"mwf-w2\" cx=\"170\" cy=\"34\" r=\"9\"/><g class=\"mwf-pks\"><g class=\"mwf-pk\"><rect x=\"99\" y=\"6\" width=\"22\" height=\"27\" rx=\"4\" fill=\"url(#mwfp)\"/><path d=\"M104 14h12M104 19.5h12M104 25h7\" stroke=\"#fff\" stroke-opacity=\".85\" stroke-width=\"2\" stroke-linecap=\"round\"/></g><g class=\"mwf-pk\"><rect x=\"99\" y=\"6\" width=\"22\" height=\"27\" rx=\"4\" fill=\"url(#mwfp)\"/><path d=\"M104 14h12M104 19.5h12M104 25h7\" stroke=\"#fff\" stroke-opacity=\".85\" stroke-width=\"2\" stroke-linecap=\"round\"/></g><g class=\"mwf-pk\"><rect x=\"99\" y=\"6\" width=\"22\" height=\"27\" rx=\"4\" fill=\"url(#mwfp)\"/><path d=\"M104 14h12M104 19.5h12M104 25h7\" stroke=\"#fff\" stroke-opacity=\".85\" stroke-width=\"2\" stroke-linecap=\"round\"/></g></g><rect x=\"34\" y=\"74\" width=\"152\" height=\"42\" rx=\"12\" fill=\"url(#mwfb)\" stroke=\"rgba(255,255,255,.22)\"/><rect class=\"mwf-slot\" x=\"78\" y=\"74\" width=\"64\" height=\"4\" rx=\"2\"/><circle class=\"mwf-led l1\" cx=\"58\" cy=\"97\" r=\"3.4\"/><circle class=\"mwf-led l2\" cx=\"70\" cy=\"97\" r=\"3.4\"/><circle class=\"mwf-led l3\" cx=\"82\" cy=\"97\" r=\"3.4\"/><circle class=\"mwf-led l4\" cx=\"94\" cy=\"97\" r=\"3.4\"/><rect x=\"128\" y=\"92\" width=\"12\" height=\"10\" rx=\"2\" fill=\"#0d1226\" stroke=\"rgba(255,255,255,.25)\"/><rect x=\"144\" y=\"92\" width=\"12\" height=\"10\" rx=\"2\" fill=\"#0d1226\" stroke=\"rgba(255,255,255,.25)\"/><rect x=\"160\" y=\"92\" width=\"12\" height=\"10\" rx=\"2\" fill=\"#0d1226\" stroke=\"rgba(255,255,255,.25)\"/></svg>" + '</div>' +
+                    '<div class="mwf-t">系统正在刷写配置分区</div>' +
+                    '<div class="mwf-s">用户操作了重置/刷写动作，请等待电源灯闪烁完成后，重新访问后台地址</div>' +
+                    '<div class="mwf-steps">' + "<div class=\"mwf-st\"><i>1</i>校验固件</div><div class=\"mwf-st\"><i>2</i>写入分区</div><div class=\"mwf-st\"><i>3</i>还原配置</div><div class=\"mwf-st\"><i>4</i>重启设备</div>" + '</div>' +
+                    '<div class="mwf-bw">' +
+                        '<div class="mwf-bar"><div class="mwf-fill" id="restore-progress"></div></div>' +
+                        '<div class="mwf-meta"><b id="mwf-pct">0%</b><span>预计剩余 <b id="mwf-left">2:30</b></span></div>' +
+                    '</div>' +
+                    '<div class="mwf-warn">请耐心等待完成，不要将设备断电</div>' +
+                    '<div class="mwf-info">' +
+                        '<div class="mwf-chip"><small>后台地址</small><b>' + lanIp + '</b></div>' +
+                        '<div class="mwf-chip"><small>默认密码</small><b>admin</b></div>' +
+                    '</div>' +
+                    '<div class="mwf-tip">完成后请先清理浏览器缓存再访问<br><span style="white-space:nowrap">Windows <kbd>Ctrl</kbd> + <kbd>Shift</kbd> + <kbd>Delete</kbd></span>　·　<span style="white-space:nowrap">Mac <kbd>Command</kbd> + <kbd>Shift</kbd> + <kbd>Delete</kbd></span></div>' +
+                '</div>';
+            overlay.offsetHeight;
+            overlay.style.opacity = 1;
+            isShowing = true;
+
+            var progressBar = document.getElementById('restore-progress');
+            var pctEl = document.getElementById('mwf-pct');
+            var leftEl = document.getElementById('mwf-left');
+            var stEls = content.querySelectorAll('.mwf-st');
+            var start = Date.now();
+            var duration = 150000; // 150秒
+            var cuts = [8, 60, 85]; // 各步骤结束的进度百分比
+            var timerId = setInterval(function() {
+                var elapsed = Date.now() - start;
+                var percent = Math.min(100, (elapsed / duration) * 100);
+                if (progressBar) progressBar.style.width = percent + '%';
+                if (pctEl) pctEl.textContent = Math.floor(percent) + '%';
+                if (leftEl) {
+                    var left = Math.max(0, Math.ceil((duration - elapsed) / 1000));
+                    leftEl.textContent = Math.floor(left / 60) + ':' + ('0' + (left % 60)).slice(-2);
+                }
+                var cur = percent < cuts[0] ? 0 : percent < cuts[1] ? 1 : percent < cuts[2] ? 2 : 3;
+                for (var i = 0; i < stEls.length; i++) {
+                    var done = i < cur || percent >= 100;
+                    stEls[i].className = 'mwf-st' + (done ? ' done' : i == cur ? ' act' : '');
+                    stEls[i].firstChild.textContent = done ? '\u2713' : String(i + 1);
+                }
+                if (percent >= 100) clearInterval(timerId);
+            }, 200);
+
+            hideTimer && clearTimeout(hideTimer);
+            hideTimer = setTimeout(function(){
+                overlay.style.opacity = 0;
+                setTimeout(function(){
+                    overlay.style.display = 'none';
+                    isShowing = false;
+                    location.reload();
+                }, fadeDuration);
+            }, duration + fadeDuration);
+
+            return;
+        }
+
+        var isReboot = msg && msg.toLowerCase().indexOf('rebooting') !== -1;
+        if (isReboot) {
+            showRebootOverlay();
+            return;
+        }
+
+        var isAk68Conn = msg && msg.indexOf('AK68已连接') !== -1;
+        if (isAk68Conn) {
+            showAk68Overlay();
+            return;
+        }
+
+        var isInit = msg && msg.indexOf('切换完成，重启设备...') !== -1;
+        if (isInit) {
+            overlay.style.opacity = 0;
+            overlay.style.display = 'none';
+            var initOverlay = document.getElementById('init-overlay');
+            if (initOverlay) {
+                initOverlay.style.display = "flex";
+                initOverlay.style.zIndex = "999999"; 
+                animateProgress(); 
+            }
+            isShowing = true;
+            return;
+        }
+
+        overlay.style.background = 'rgba(0,0,0,0.55)';
+        overlay.style.backdropFilter = 'blur(7px)';
+        overlay.style.display = 'flex';
+        overlay.style.alignItems = 'center';
+        overlay.style.justifyContent = 'center';
+
+        content.textContent = msg;
+        if (color && typeof color === 'string') {
+            content.style.color = color;
+        } else {
+            content.style.color = '#fff';
+        }
+        overlay.style.opacity = 1;
+        isShowing = true;
+
+        var secNum = Number(sec);
+        var showTime = (!isNaN(secNum) && secNum > 0 ? secNum : 2) * 1000;
+        hideTimer && clearTimeout(hideTimer);
+        hideTimer = setTimeout(hideOverlay, showTime + fadeDuration);
+    }
+
+    // ====  Windows10 ====
+    function showRebootOverlay() {
+        var rebootOverlay = document.getElementById('reboot_overlay');
+        if (rebootOverlay) rebootOverlay.remove();
+        rebootOverlay = document.createElement('div');
+        rebootOverlay.id = 'reboot_overlay';
+        rebootOverlay.style.cssText = 'position:fixed;top:0;left:0;right:0;bottom:0;background:#0a0c14;z-index:999999;display:flex;flex-direction:column;align-items:center;justify-content:center;color:#fff;font-family:-apple-system,BlinkMacSystemFont,PingFang SC,sans-serif;';
+        rebootOverlay.innerHTML = '<div style="position:absolute;inset:0;background:radial-gradient(ellipse at 50% 40%,rgba(124,92,252,0.06),transparent 60%);pointer-events:none"></div>'+
+        '<div style="position:relative;z-index:1;display:flex;flex-direction:column;align-items:center;">'+
+        '<div style="margin-bottom:28px;"><svg width="64" height="64" viewBox="0 0 100 100"><circle cx="50" cy="50" r="38" fill="none" stroke="rgba(124,92,252,0.15)" stroke-width="4"/><circle cx="50" cy="50" r="38" fill="none" stroke="#7c5cfc" stroke-width="4" stroke-linecap="round" stroke-dasharray="180" stroke-dashoffset="120"><animateTransform attributeName="transform" type="rotate" values="0 50 50;360 50 50" dur="1.2s" repeatCount="indefinite"/></circle></svg></div>'+
+        '<div style="font-size:22px;font-weight:600;letter-spacing:-0.5px;margin-bottom:8px;">系统正在重启</div>'+
+        '<div style="font-size:13px;color:rgba(255,255,255,0.45);margin-bottom:32px;">请勿关闭设备电源</div>'+
+        '<div style="width:240px;height:4px;background:rgba(255,255,255,0.06);border-radius:2px;overflow:hidden;margin-bottom:12px;"><div id="reboot_progress" style="width:0%;height:100%;background:linear-gradient(90deg,#7c5cfc,#22d3ee);border-radius:2px;transition:width 0.4s;"></div></div>'+
+        '<div id="reboot_percent" style="font-size:12px;color:rgba(255,255,255,0.4);letter-spacing:1px;">0%</div>'+
+        '<div style="margin-top:40px;font-size:10px;color:rgba(255,255,255,0.2);letter-spacing:3px;">MWRT-1139-24</div>'+
+        '</div>';
+        document.body.appendChild(rebootOverlay);
+
+        var progressBar = document.getElementById('reboot_progress');
+        var percentText = document.getElementById('reboot_percent');
+        var duration = 120000;
+        var start = Date.now();
+        var rebootTimer = setInterval(function() {
+            var elapsed = Date.now() - start;
+            var percent = Math.min(100, (elapsed / duration) * 100);
+            if (progressBar) progressBar.style.width = percent + '%';
+            if (percentText) percentText.textContent = Math.floor(percent) + '%';
+            if (percent >= 100) { clearInterval(rebootTimer); location.reload(); }
+        }, 200);
+    }
+
+    // 隐藏淡出动画
+    function hideOverlay() {
+        overlay.style.opacity = 0;
+        setTimeout(function(){
+            overlay.style.display = 'none';
+            isShowing = false;
+            scheduleNextPoll();
+        }, fadeDuration);
+    }
+
+    // 请求后端
+    function pollMsg() {
+        if(isShowing) return;
+        XHR.get('<%=luci.dispatcher.build_url("admin", "fancontrol", "msg")%>', 
+            { set: 'msg', p: '1' }, 
+            function(x, rv) {
+                var msg = rv && rv.lucimsg;
+                var sec = rv && rv.sec;
+                var color = rv && rv.color;
+                // color支持HEX如#ff0 或 rgb(255,0,0)
+                if(msg && (typeof msg === 'string') && msg.trim()!=='') {
+                    showOverlay(msg, sec, color);
+                } else {
+                    scheduleNextPoll();
+                }
+            }
+        );
+    }
+
+    function scheduleNextPoll() {
+        timer && clearTimeout(timer);
+        timer = setTimeout(pollMsg, pollingInterval);
+    }
+
+    window.addEventListener('DOMContentLoaded', pollMsg);
+
+    overlay.addEventListener('click', function(e){
+        // hideOverlay();
+    });
+})();
+</script>
+
+<!-- idle screensaver - Mwrt Premium -->
+<div id="idle_overlay" style="position:fixed;top:0;left:0;right:0;bottom:0;width:100vw;height:100vh;z-index:10000;display:none;opacity:0;transition:opacity 0.6s;font-family:-apple-system,BlinkMacSystemFont,'PingFang SC','Microsoft YaHei',sans-serif;">
+<canvas id="idle_canvas" style="position:absolute;inset:0;width:100%;height:100%"></canvas>
+<div class="idle-vignette" style="position:absolute;inset:0;background:radial-gradient(ellipse at center,transparent 30%,rgba(0,0,0,0.4) 100%);pointer-events:none;z-index:1"></div>
+<div style="position:relative;z-index:2;width:100%;height:100%;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:24px 16px;box-sizing:border-box;overflow:hidden;">
+  <div id="idle_topbar" style="position:absolute;top:24px;left:0;right:0;display:flex;justify-content:space-between;align-items:center;padding:0 36px;font-size:11px;color:rgba(255,255,255,0.5);letter-spacing:2px;">
+    <div id="idle_brand" style="display:flex;align-items:center;gap:10px;font-size:11px;letter-spacing:2px;font-weight:500;"><span style="width:6px;height:6px;border-radius:50%;background:#34d399;box-shadow:0 0 8px #34d399;animation:idlePls 2s infinite;"></span><span id="idle_brand_model" style="color:rgba(255,255,255,0.85);font-weight:600;letter-spacing:3px;"></span></div>
+    <div id="idle_topright" style="display:none;"></div>
+  </div>
+
+  <div id="idle_main" style="display:flex;flex-direction:column;align-items:center;width:100%;max-width:920px;">
+    
+    <div id="idle_time" style="font-size:clamp(4.5rem,12vw,7.5rem);font-weight:100;color:#fff;letter-spacing:-4px;font-family:'SF Pro Display','Helvetica Neue',sans-serif;text-shadow:0 0 60px rgba(255,255,255,0.06);line-height:1;"></div>
+    <div id="idle_date" style="font-size:13px;color:rgba(255,255,255,0.5);letter-spacing:5px;margin-top:6px;margin-bottom:30px;font-weight:300;"></div>
+    <div id="idle_status" style="display:flex;gap:8px;align-items:center;margin-bottom:24px;flex-wrap:wrap;justify-content:center;"></div>
+  </div>
+
+  <div id="idle_cell_card" style="display:none;width:100%;max-width:1000px;background:linear-gradient(135deg,rgba(255,255,255,0.04) 0%,rgba(255,255,255,0.02) 100%);backdrop-filter:blur(18px);-webkit-backdrop-filter:blur(18px);border:1px solid rgba(255,255,255,0.08);border-radius:18px;padding:18px 22px;position:relative;overflow:hidden;">
+    <div class="idle-cell-glow"></div>
+    <div id="idle_cell_header" style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;">
+      <div style="display:flex;align-items:center;gap:6px;"><span style="width:5px;height:5px;border-radius:50%;background:#a78bfa;box-shadow:0 0 6px #a78bfa;"></span><span style="font-size:9px;color:rgba(255,255,255,0.4);letter-spacing:3px;text-transform:uppercase;font-weight:600;">CELLULAR · 蜂窝网络</span></div>
+      <div id="idle_cell_mode_wrap"></div>
+    </div>
+    <div id="idle_cell_body" style="display:grid;grid-template-columns:auto 1fr auto;gap:24px;align-items:center;">
+      <div id="idle_cell_left" style="display:flex;flex-direction:column;align-items:center;gap:8px;min-width:140px;"></div>
+      <div id="idle_cell_center" style="display:flex;flex-direction:column;align-items:center;gap:6px;"></div>
+      <div id="idle_cell_right" style="display:grid;grid-template-columns:repeat(2,minmax(108px,1fr));gap:6px;"></div>
+    </div>
+  </div>
+
+  <div id="idle_grid" style="display:grid;grid-template-columns:repeat(6,1fr);gap:8px;max-width:780px;width:100%;margin-top:14px;"></div>
+
+  
+</div>
+</div>
+<style>
+#idle_overlay .idle-card{background:linear-gradient(135deg,rgba(255,255,255,0.06) 0%,rgba(255,255,255,0.02) 100%);backdrop-filter:blur(16px);-webkit-backdrop-filter:blur(16px);border:1px solid rgba(255,255,255,0.08);border-radius:14px;padding:14px 12px;text-align:center;position:relative;overflow:hidden;transition:all 0.3s}
+#idle_overlay .idle-card::before{content:'';position:absolute;top:0;left:0;right:0;height:1px;background:linear-gradient(90deg,transparent,rgba(255,255,255,0.18),transparent)}
+#idle_overlay .idle-card .ic-v{font-size:18px;font-weight:700;color:#fff;margin-bottom:2px;letter-spacing:0.5px}
+#idle_overlay .idle-card .ic-l{font-size:9px;color:rgba(255,255,255,0.4);letter-spacing:2px;text-transform:uppercase}
+#idle_overlay .idle-row{background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.06);border-radius:10px;padding:9px 12px;display:flex;justify-content:space-between;align-items:center;font-size:12px;backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px);transition:background 0.3s}
+#idle_overlay .idle-row .rl{color:rgba(255,255,255,0.4);letter-spacing:1px}
+#idle_overlay .idle-row .rv{color:#fff;font-weight:600;font-family:'SF Mono','Menlo',monospace}
+#idle_overlay .idle-row.acc-purple .rv{color:#c4b5fd}
+#idle_overlay .idle-row.acc-cyan .rv{color:#67e8f9}
+#idle_overlay .idle-row.acc-green .rv{color:#86efac}
+#idle_overlay .idle-row.acc-amber .rv{color:#fcd34d}
+#idle_overlay .idle-row.acc-pink .rv{color:#f9a8d4}
+#idle_overlay .idle-grid-item{background:linear-gradient(180deg,rgba(255,255,255,0.05) 0%,rgba(255,255,255,0.02) 100%);backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px);border:1px solid rgba(255,255,255,0.07);border-radius:12px;padding:12px 6px;text-align:center;display:flex;flex-direction:column;align-items:center;gap:3px;position:relative;overflow:hidden}
+#idle_overlay .idle-grid-item::after{content:'';position:absolute;bottom:0;left:50%;transform:translateX(-50%);width:30%;height:2px;background:currentColor;opacity:0.3;border-radius:2px}
+#idle_overlay .idle-grid-item .ig-icon{font-size:16px;margin-bottom:2px;display:flex;align-items:center;justify-content:center}
+#idle_overlay .idle-grid-item .ig-v{font-size:15px;font-weight:700;letter-spacing:0.3px}
+#idle_overlay .idle-grid-item .ig-l{font-size:8px;color:rgba(255,255,255,0.4);letter-spacing:1.5px;text-transform:uppercase}
+#idle_overlay .idle-status-pill{display:flex;align-items:center;gap:6px;padding:6px 14px;border-radius:18px;background:linear-gradient(135deg,rgba(255,255,255,0.05),rgba(255,255,255,0.02));border:1px solid rgba(255,255,255,0.08);font-size:11px;color:rgba(255,255,255,0.7);font-weight:500;letter-spacing:0.5px}
+#idle_overlay .idle-status-pill .sp-dot{width:6px;height:6px;border-radius:50%;animation:idlePls 2s infinite;box-shadow:0 0 8px currentColor}
+#idle_overlay .idle-fan-spin{display:inline-flex;animation:idleFanSpin 1.8s linear infinite;transform-origin:center center}
+#idle_overlay .idle-section-title{font-size:9px;color:rgba(255,255,255,0.35);letter-spacing:3px;text-transform:uppercase;margin-bottom:4px;text-align:center;font-weight:600}
+#idle_overlay .idle-sig-ring{position:relative;width:160px;height:160px;display:flex;align-items:center;justify-content:center;margin:8px 0}
+#idle_overlay .idle-sig-ring svg{position:absolute;inset:0;transform:rotate(-90deg)}
+#idle_overlay .idle-sig-ring .sr-bg{stroke:rgba(255,255,255,0.06)}
+#idle_overlay .idle-sig-ring .sr-fg{stroke:url(#idleSigGrad);stroke-linecap:round;transition:stroke-dashoffset 0.8s ease}
+#idle_overlay .idle-sig-ring .sr-center{position:relative;z-index:2;text-align:center;display:flex;flex-direction:column;align-items:center;gap:2px}
+#idle_overlay .idle-sig-ring .sr-pct{font-size:36px;font-weight:200;color:#fff;letter-spacing:-1px;line-height:1;font-family:'SF Pro Display',sans-serif}
+#idle_overlay .idle-sig-ring .sr-pct sup{font-size:14px;color:rgba(255,255,255,0.5);font-weight:300;margin-left:2px}
+#idle_overlay .idle-sig-ring .sr-label{font-size:9px;color:rgba(255,255,255,0.45);letter-spacing:3px;text-transform:uppercase;margin-top:4px}
+#idle_overlay .idle-sig-ring .sr-rsrp{font-size:11px;color:rgba(255,255,255,0.55);letter-spacing:1px;font-family:'SF Mono','Menlo',monospace;margin-top:6px}
+#idle_overlay .idle-bars{display:flex;gap:3px;align-items:flex-end;height:18px}
+#idle_overlay .idle-bars span{width:4px;background:rgba(255,255,255,0.15);border-radius:1px;transition:all 0.3s}
+#idle_overlay .idle-bars span:nth-child(1){height:30%}
+#idle_overlay .idle-bars span:nth-child(2){height:50%}
+#idle_overlay .idle-bars span:nth-child(3){height:70%}
+#idle_overlay .idle-bars span:nth-child(4){height:90%}
+#idle_overlay .idle-bars span:nth-child(5){height:100%}
+#idle_overlay .idle-bars span.on{background:linear-gradient(180deg,#34d399,#22d3ee);box-shadow:0 0 6px rgba(34,211,153,0.5)}
+#idle_overlay .idle-isp-title{font-size:18px;font-weight:600;color:#fff;letter-spacing:1px;text-align:center;margin-bottom:2px}
+#idle_overlay .idle-isp-mode{display:inline-block;padding:2px 10px;border-radius:10px;font-size:10px;font-weight:700;letter-spacing:1.5px;background:linear-gradient(90deg,rgba(167,139,250,0.2),rgba(96,165,250,0.2));color:#c4b5fd;border:1px solid rgba(167,139,250,0.3)}
+#idle_overlay .idle-isp-mode.mode-5g{background:linear-gradient(90deg,rgba(167,139,250,0.25),rgba(244,114,182,0.25));border-color:rgba(244,114,182,0.4);color:#f9a8d4}
+#idle_overlay .idle-isp-mode.mode-4g{background:linear-gradient(90deg,rgba(96,165,250,0.2),rgba(34,211,238,0.2));border-color:rgba(96,165,250,0.4);color:#67e8f9}
+#idle_overlay .idle-empty{padding:14px;text-align:center;color:rgba(255,255,255,0.3);font-size:11px;letter-spacing:1px}
+#idle_overlay .idle-cell-glow{position:absolute;top:-30%;right:-10%;width:340px;height:340px;background:radial-gradient(circle,rgba(167,139,250,0.12) 0%,transparent 65%);pointer-events:none;filter:blur(20px)}
+#idle_overlay .ic-carrier-logo{width:64px;height:64px;display:flex;align-items:center;justify-content:center;font-size:22px;font-weight:700;color:#fff;letter-spacing:-0.5px;position:relative}
+/* 运营商真 PNG logo(和首页 hero 同一套 /logo/*.png, 200x62 透明横图):
+   透明无底、无圆环, img 用 EMB 包围盒绝对定位裁出"图形那一截"(和首页一致)。 */
+#idle_overlay .ic-carrier-logo.has-png{background:transparent;padding:0;overflow:hidden}
+#idle_overlay .ic-carrier-logo.has-png img{position:absolute;max-width:none;display:block}
+#idle_overlay .ic-carrier-logo.op-fallback{border-radius:50%;background:linear-gradient(135deg,#3a6ea5,#2a5080)}
+#idle_overlay .ic-carrier-name{font-size:15px;font-weight:600;color:#fff;letter-spacing:1px;text-align:center}
+#idle_overlay .ic-mode-pill{display:inline-flex;align-items:center;gap:5px;padding:4px 12px;border-radius:14px;font-size:10px;font-weight:700;letter-spacing:1.5px;background:linear-gradient(90deg,rgba(167,139,250,0.22),rgba(96,165,250,0.22));color:#c4b5fd;border:1px solid rgba(167,139,250,0.32)}
+#idle_overlay .ic-mode-pill.mode-5g{background:linear-gradient(90deg,rgba(167,139,250,0.28),rgba(244,114,182,0.28));border-color:rgba(244,114,182,0.45);color:#f9a8d4}
+#idle_overlay .ic-mode-pill.mode-4g{background:linear-gradient(90deg,rgba(96,165,250,0.22),rgba(34,211,238,0.22));border-color:rgba(96,165,250,0.45);color:#67e8f9}
+#idle_overlay .ic-mode-pill::before{content:'';width:5px;height:5px;border-radius:50%;background:currentColor;box-shadow:0 0 6px currentColor;animation:idlePls 2s infinite}
+#idle_overlay .ic-bars{display:flex;gap:3px;align-items:flex-end;height:14px}
+#idle_overlay .ic-bars span{width:3px;background:rgba(255,255,255,0.12);border-radius:1px;transition:all 0.3s}
+#idle_overlay .ic-bars span:nth-child(1){height:30%}
+#idle_overlay .ic-bars span:nth-child(2){height:50%}
+#idle_overlay .ic-bars span:nth-child(3){height:70%}
+#idle_overlay .ic-bars span:nth-child(4){height:90%}
+#idle_overlay .ic-bars span:nth-child(5){height:100%}
+#idle_overlay .ic-bars span.on{background:linear-gradient(180deg,#34d399,#22d3ee);box-shadow:0 0 6px rgba(34,211,153,0.5)}
+#idle_overlay .ic-ring{position:relative;width:130px;height:130px;display:flex;align-items:center;justify-content:center}
+#idle_overlay .ic-ring svg{position:absolute;inset:0;transform:rotate(-90deg)}
+#idle_overlay .ic-ring .sr-bg{stroke:rgba(255,255,255,0.06)}
+#idle_overlay .ic-ring .sr-fg{stroke:url(#idleSigGrad);stroke-linecap:round;transition:stroke-dashoffset 0.8s ease}
+#idle_overlay .ic-ring .sr-center{position:relative;z-index:2;text-align:center;display:flex;flex-direction:column;align-items:center;gap:1px}
+#idle_overlay .ic-ring .sr-pct{font-size:30px;font-weight:200;color:#fff;letter-spacing:-1px;line-height:1;font-family:'SF Pro Display',sans-serif}
+#idle_overlay .ic-ring .sr-pct sup{font-size:11px;color:rgba(255,255,255,0.5);font-weight:300;margin-left:1px}
+#idle_overlay .ic-ring .sr-label{font-size:8px;color:rgba(255,255,255,0.45);letter-spacing:2.5px;text-transform:uppercase;margin-top:3px}
+#idle_overlay .ic-ring .sr-rsrp{font-size:10px;color:rgba(255,255,255,0.6);letter-spacing:0.8px;font-family:'SF Mono','Menlo',monospace;margin-top:3px;font-weight:600}
+#idle_overlay .ic-chip{background:linear-gradient(135deg,rgba(255,255,255,0.05),rgba(255,255,255,0.015));border:1px solid rgba(255,255,255,0.07);border-radius:10px;padding:9px 12px;display:flex;justify-content:space-between;align-items:center;gap:8px;font-size:11px;transition:all 0.3s;min-width:0;position:relative;overflow:hidden;box-sizing:border-box}
+#idle_overlay .ic-chip::before{content:'';position:absolute;left:0;top:0;bottom:0;width:2px;background:linear-gradient(180deg,transparent,currentColor,transparent);opacity:0.5}
+#idle_overlay .ic-chip:hover{background:linear-gradient(135deg,rgba(255,255,255,0.07),rgba(255,255,255,0.025));border-color:rgba(255,255,255,0.14);transform:translateY(-1px)}
+#idle_overlay .ic-chip .cl{color:rgba(255,255,255,0.45);letter-spacing:1.4px;font-size:9px;font-weight:700;text-transform:uppercase;flex-shrink:0;font-family:'SF Pro Display','Helvetica Neue','PingFang SC',sans-serif}
+#idle_overlay .ic-chip .cv{color:#fff;font-weight:600;font-family:'SF Pro Display','Helvetica Neue','JetBrains Mono','Menlo',monospace;font-size:13px;text-align:right;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;letter-spacing:0.5px;font-feature-settings:'tnum' 1,'lnum' 1;text-shadow:0 0 12px rgba(255,255,255,0.08);min-width:0}
+#idle_overlay .ic-chip.acc-purple .cv{color:#c4b5fd}
+#idle_overlay .ic-chip.acc-cyan .cv{color:#67e8f9}
+#idle_overlay .ic-chip.acc-green .cv{color:#86efac}
+#idle_overlay .ic-chip.acc-amber .cv{color:#fcd34d}
+#idle_overlay .ic-chip.acc-pink .cv{color:#f9a8d4}
+#idle_overlay .ic-chip.acc-red .cv{color:#fca5a5}
+@keyframes idlePls{0%,100%{opacity:1}50%{opacity:0.3}}
+@keyframes idleFanSpin{from{transform:rotate(0deg)}to{transform:rotate(360deg)}}
+@keyframes idleFloat{0%,100%{transform:translateY(0)}50%{transform:translateY(-3px)}}
+@media(max-width:768px){
+  #idle_overlay #idle_grid{grid-template-columns:repeat(3,1fr);max-width:92vw;width:92vw;gap:6px}
+  #idle_overlay #idle_topbar{padding:0 14px;font-size:10px;letter-spacing:1px}
+  #idle_overlay #idle_brand{gap:6px;font-size:10px;letter-spacing:1px}
+  #idle_overlay #idle_brand>span:nth-child(2){letter-spacing:2px}
+  #idle_overlay #idle_cell_card{padding:14px 12px;max-width:92vw;width:92vw;box-sizing:border-box;margin-left:auto;margin-right:auto;overflow:hidden}
+  #idle_overlay #idle_cell_body{grid-template-columns:1fr 1fr!important;gap:10px;justify-items:stretch;align-items:center;width:100%;box-sizing:border-box}
+  #idle_overlay #idle_cell_left{flex-direction:column;gap:8px;justify-content:center;align-items:center;width:100%;min-width:0;text-align:center}
+  #idle_overlay .ic-carrier-name{text-align:center;font-size:13px}
+  #idle_overlay .ic-carrier-sub{text-align:center;font-size:9px}
+  #idle_overlay #idle_cell_right{display:none!important}
+  #idle_overlay .ic-ring{width:100px;height:100px}
+  #idle_overlay .ic-ring .sr-pct{font-size:22px}
+  #idle_overlay .ic-carrier-logo{width:48px;height:48px;font-size:16px}
+  #idle_overlay .ic-rsrp{font-size:10px}
+  #idle_overlay .ic-bars{transform:scale(0.85)}
+}
+@media(max-width:480px){
+  #idle_overlay #idle_cell_card{padding:12px 10px}
+  #idle_overlay .ic-ring{width:90px;height:90px}
+  #idle_overlay .ic-ring .sr-pct{font-size:20px}
+  #idle_overlay .ic-carrier-logo{width:42px;height:42px;font-size:14px}
+  #idle_overlay .ic-carrier-name{font-size:12px}
+}
+/* s256 glass screensaver */
+
+/* ===== s256 屏保毛玻璃: 柔焦多色壁纸(无光斑) + 统一玻璃面板 ===== */
+#idle_overlay{background:linear-gradient(180deg,rgba(8,8,18,.16),rgba(8,8,18,.34)),url("data:image/svg+xml,%3Csvg%20xmlns%3D'http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg'%20viewBox%3D'0%200%201440%20900'%20preserveAspectRatio%3D'xMidYMid%20slice'%3E%3Cdefs%3E%3ClinearGradient%20id%3D'base'%20x1%3D'0'%20y1%3D'0'%20x2%3D'0'%20y2%3D'1'%3E%3Cstop%20offset%3D'0.00'%20stop-color%3D'%230b0a18'%2F%3E%3Cstop%20offset%3D'0.50'%20stop-color%3D'%230c0b1c'%2F%3E%3Cstop%20offset%3D'1.00'%20stop-color%3D'%23090912'%2F%3E%3C%2FlinearGradient%3E%3ClinearGradient%20id%3D'm0'%20x1%3D'0'%20y1%3D'0'%20x2%3D'1'%20y2%3D'1'%3E%3Cstop%20offset%3D'0.00'%20stop-color%3D'%233b5bff'%2F%3E%3Cstop%20offset%3D'0.50'%20stop-color%3D'%236a45e6'%2F%3E%3Cstop%20offset%3D'1.00'%20stop-color%3D'%231b1f52'%2F%3E%3C%2FlinearGradient%3E%3ClinearGradient%20id%3D'm1'%20x1%3D'1'%20y1%3D'0'%20x2%3D'0'%20y2%3D'1'%3E%3Cstop%20offset%3D'0.00'%20stop-color%3D'%23ff6aa8'%2F%3E%3Cstop%20offset%3D'0.50'%20stop-color%3D'%23b04fd8'%2F%3E%3Cstop%20offset%3D'1.00'%20stop-color%3D'%233a2370'%2F%3E%3C%2FlinearGradient%3E%3ClinearGradient%20id%3D'm2'%20x1%3D'0'%20y1%3D'0'%20x2%3D'0'%20y2%3D'1'%3E%3Cstop%20offset%3D'0.00'%20stop-color%3D'%231fb5c9'%2F%3E%3Cstop%20offset%3D'0.50'%20stop-color%3D'%232f64d9'%2F%3E%3Cstop%20offset%3D'1.00'%20stop-color%3D'%231a2a63'%2F%3E%3C%2FlinearGradient%3E%3ClinearGradient%20id%3D'm3'%20x1%3D'1'%20y1%3D'1'%20x2%3D'0'%20y2%3D'0'%3E%3Cstop%20offset%3D'0.00'%20stop-color%3D'%238b5cf6'%2F%3E%3Cstop%20offset%3D'0.50'%20stop-color%3D'%23d9468f'%2F%3E%3Cstop%20offset%3D'1.00'%20stop-color%3D'%232a1b55'%2F%3E%3C%2FlinearGradient%3E%3Cfilter%20id%3D'b'%20x%3D'-45%25'%20y%3D'-45%25'%20width%3D'190%25'%20height%3D'190%25'%3E%3CfeGaussianBlur%20stdDeviation%3D'150'%2F%3E%3C%2Ffilter%3E%3C%2Fdefs%3E%3Crect%20width%3D%221440%22%20height%3D%22900%22%20fill%3D%22url(%23base)%22%2F%3E%3Cg%20filter%3D%22url(%23b)%22%3E%3Cellipse%20cx%3D%22200%22%20cy%3D%22150%22%20rx%3D%22700%22%20ry%3D%22500%22%20fill%3D%22url(%23m0)%22%20opacity%3D%220.62%22%2F%3E%3Cellipse%20cx%3D%221260%22%20cy%3D%22180%22%20rx%3D%22640%22%20ry%3D%22470%22%20fill%3D%22url(%23m1)%22%20opacity%3D%220.5%22%2F%3E%3Cellipse%20cx%3D%22240%22%20cy%3D%22800%22%20rx%3D%22680%22%20ry%3D%22460%22%20fill%3D%22url(%23m2)%22%20opacity%3D%220.48%22%2F%3E%3Cellipse%20cx%3D%221240%22%20cy%3D%22790%22%20rx%3D%22700%22%20ry%3D%22470%22%20fill%3D%22url(%23m3)%22%20opacity%3D%220.5%22%2F%3E%3C%2Fg%3E%3C%2Fsvg%3E") center/cover no-repeat,#0b0a18!important}
+#idle_overlay .idle-vignette{background:linear-gradient(180deg,rgba(6,6,14,.28) 0%,transparent 26%,transparent 72%,rgba(6,6,14,.36) 100%)!important}
+#idle_overlay #idle_time{font-weight:200;text-shadow:0 2px 40px rgba(120,130,255,.28)}
+#idle_overlay #idle_date{color:rgba(255,255,255,.62)}
+#idle_overlay #idle_cell_card,#idle_overlay .idle-card,#idle_overlay .idle-grid-item,#idle_overlay .idle-status-pill{
+ background:linear-gradient(150deg,rgba(255,255,255,.15),rgba(255,255,255,.055))!important;
+ -webkit-backdrop-filter:blur(30px) saturate(175%)!important;backdrop-filter:blur(30px) saturate(175%)!important;
+ border:1px solid rgba(255,255,255,.2)!important;
+ box-shadow:inset 0 1px 0 rgba(255,255,255,.3),inset 0 0 0 1px rgba(255,255,255,.03),0 24px 60px -28px rgba(0,0,0,.7)!important}
+#idle_overlay #idle_cell_card{border-radius:28px!important;padding:22px 26px!important}
+#idle_overlay .idle-grid-item{border-radius:20px;padding:14px 6px}
+#idle_overlay .idle-grid-item::after{display:none}
+#idle_overlay .idle-status-pill{border-radius:20px;padding:7px 15px;color:rgba(255,255,255,.82)}
+#idle_overlay .idle-cell-glow{display:none}
+#idle_overlay .ic-chip,#idle_overlay .idle-row{
+ background:rgba(255,255,255,.075);border:1px solid rgba(255,255,255,.12);border-radius:14px;
+ box-shadow:inset 0 1px 0 rgba(255,255,255,.14)}
+#idle_overlay .ic-chip::before{display:none}
+#idle_overlay .ic-chip:hover{background:rgba(255,255,255,.12);border-color:rgba(255,255,255,.2)}
+#idle_overlay .ic-chip .cl,#idle_overlay .ig-l{color:rgba(255,255,255,.55)}
+#idle_overlay .ic-ring .sr-bg,#idle_overlay .idle-sig-ring .sr-bg{stroke:rgba(255,255,255,.14)}
+#idle_overlay .ic-bars span{background:rgba(255,255,255,.2)}
+#idle_overlay .ic-bars span.on{box-shadow:none}
+#idle_overlay .ic-mode-pill,#idle_overlay .idle-isp-mode{-webkit-backdrop-filter:blur(12px);backdrop-filter:blur(12px)}
+</style>
+<svg width="0" height="0" style="position:absolute"><defs><linearGradient id="idleSigGrad" x1="0%" y1="0%" x2="100%" y2="100%"><stop offset="0%" stop-color="#34d399"/><stop offset="50%" stop-color="#22d3ee"/><stop offset="100%" stop-color="#a78bfa"/></linearGradient></defs></svg>
+<script>
+(function(){
+    var idleOverlay=document.getElementById('idle_overlay');
+    var idleCanvas=document.getElementById('idle_canvas');
+    var idleTimeDom=document.getElementById('idle_time');
+    var idleDateDom=document.getElementById('idle_date');
+    var pollIntv=null,pollXHR=null;
+    var idleTimer=null,isIdle=false;
+    var lastAction=Date.now();
+    var showtime=null;
+    var countdownDom=null,countdownShow=false;
+    var particles=[],animFrame=null;
+
+    ['mousedown','mousemove','touchstart','keydown','scroll','wheel','click'].forEach(function(evt){
+        window.addEventListener(evt,function(){lastAction=Date.now();hideCountdown();if(isIdle)hideIdleOverlay();},true);
+    });
+
+    function renderOSVSwitchLink(osv){
+        var c=document.getElementById('osv-switch-link');if(!c)return;
+        // C2000 系列保留"NRadio-鲲鹏无限",其余机型显示 Mwrt-<机型名>(服务端按机型注入)
+        var label=<%= _os_isc2000 and "'NRadio-鲲鹏无限'" or ("'Mwrt-'+" .. _os_util.serialize_json(_os_model)) %>;
+        var color=(osv==="纯净版系统")?'#03a9f4':'#FF9800';
+        var a=document.createElement('a');
+        a.href='/cgi-bin/luci/admin/system/mwrtst';
+        a.style.color=color;a.style.fontWeight='600';a.style.marginRight='16px';
+        a.textContent=label;
+        c.textContent='';c.appendChild(a);c.appendChild(document.createTextNode('/ '));
+    }
+
+    function pollShowtime(){
+        pollXHR&&pollXHR.abort&&pollXHR.abort();
+        pollXHR=new XMLHttpRequest();
+        pollXHR.open('GET','<%=luci.dispatcher.build_url("admin","fancontrol","msgct")%>',true);
+        pollXHR.onreadystatechange=function(){
+            if(pollXHR.readyState===4&&pollXHR.status===200){
+                var data;try{data=JSON.parse(pollXHR.responseText);}catch(e){}
+                var st=(data&&data.showtime)?parseInt(data.showtime,10):null;
+                renderOSVSwitchLink(data&&data.osv);
+                if(st&&!isNaN(st)&&st>0){showtime=st;lastAction=Date.now();idleLoop();}
+                else{showtime=null;setTimeout(pollShowtime,3000);}
+            }
+        };pollXHR.send();
+    }
+
+    function idleLoop(){clearTimeout(idleTimer);if(isIdle||!showtime)return;idleTimer=setTimeout(checkIdle,1000);}
+    function checkIdle(){
+        if(document.querySelector('iframe')){clearTimeout(idleTimer);return;}
+        if(!showtime){pollShowtime();return;}
+        var idleSec=Math.floor((Date.now()-lastAction)/1000),remain=showtime-idleSec;
+        if(showtime>=6&&remain<=5&&remain>0)showCountdown(remain);else hideCountdown();
+        if(!isIdle&&idleSec>=showtime){hideCountdown();showIdleOverlay();}else idleLoop();
+    }
+    // s93: 倒计时胶囊重做 —— 小号玻璃胶囊 + 5 秒倒走的进度环(数字在环里),
+    // 位置按断点避开移动端底栏;样式只注入一次,之后每秒只改数字和环的偏移。
+    function cdInit(){
+        if(countdownDom)return;
+        var st=document.createElement('style');
+        st.textContent=[
+            '#mwrt-idle-cd{position:fixed;left:50%;bottom:28px;z-index:200001;display:none;align-items:center;gap:9px;height:34px;padding:0 15px 0 5px;box-sizing:border-box;border-radius:17px;background:rgba(17,22,34,.74);border:1px solid rgba(255,255,255,.10);box-shadow:0 8px 24px -8px rgba(0,0,0,.5),inset 0 1px 0 rgba(255,255,255,.07);-webkit-backdrop-filter:blur(14px) saturate(160%);backdrop-filter:blur(14px) saturate(160%);color:rgba(255,255,255,.88);font:500 13px/1 -apple-system,BlinkMacSystemFont,"PingFang SC","Microsoft YaHei",sans-serif;letter-spacing:.3px;white-space:nowrap;pointer-events:none;opacity:0;transform:translate(-50%,8px);transition:opacity .25s ease,transform .25s ease}',
+            '#mwrt-idle-cd.on{opacity:1;transform:translate(-50%,0)}',
+            '#mwrt-idle-cd .cd-ring{position:relative;width:24px;height:24px;flex:none}',
+            '#mwrt-idle-cd svg{position:absolute;left:0;top:0;width:100%;height:100%;transform:rotate(-90deg)}',
+            '#mwrt-idle-cd circle{fill:none;stroke-width:2.2}',
+            '#mwrt-idle-cd .cd-t{stroke:rgba(255,255,255,.16)}',
+            '#mwrt-idle-cd .cd-p{stroke:#22d3ee;stroke:url(#idleSigGrad) #22d3ee;stroke-linecap:round;stroke-dasharray:62.83;stroke-dashoffset:0;transition:stroke-dashoffset 1s linear}',
+            '#mwrt-idle-cd.nt .cd-p{transition:none}',
+            '#mwrt-idle-cd .cd-n{position:absolute;left:0;top:0;width:100%;height:100%;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:600;line-height:1;font-variant-numeric:tabular-nums;color:#fff}',
+            '@keyframes mcdpop{from{transform:scale(1.35);opacity:.5}to{transform:scale(1);opacity:1}}',
+            '#mwrt-idle-cd .cd-n.pop{animation:mcdpop .32s ease-out}',
+            '@media (max-width:768px){#mwrt-idle-cd{bottom:calc(env(safe-area-inset-bottom,0px) + 66px)}}'
+        ].join('\n');
+        document.head.appendChild(st);
+        countdownDom=document.createElement('div');
+        countdownDom.id='mwrt-idle-cd';
+        countdownDom.setAttribute('role','status');
+        countdownDom.innerHTML='<span class="cd-ring"><svg viewBox="0 0 24 24"><circle class="cd-t" cx="12" cy="12" r="10"/><circle class="cd-p" cx="12" cy="12" r="10"/></svg><b class="cd-n"></b></span><span class="cd-l">即将进入屏保</span>';
+        document.body.appendChild(countdownDom);
+    }
+    function showCountdown(sec){
+        cdInit();
+        var d=countdownDom,n=d.querySelector('.cd-n'),p=d.querySelector('.cd-p'),C=62.83;
+        if(!countdownShow){
+            d.style.display='flex';
+            d.classList.add('nt');p.style.strokeDashoffset=String(C*(1-sec/5));
+            void d.offsetWidth;
+            d.classList.remove('nt');
+            d.classList.add('on');
+            countdownShow=true;
+        }
+        if(n.textContent!==String(sec)){
+            n.textContent=sec;
+            n.classList.remove('pop');void n.offsetWidth;n.classList.add('pop');
+        }
+        p.style.strokeDashoffset=String(C*(1-(sec-1)/5));
+    }
+    function hideCountdown(){
+        if(countdownDom&&countdownShow){
+            countdownShow=false;countdownDom.classList.remove('on');
+            setTimeout(function(){if(countdownDom&&!countdownShow)countdownDom.style.display='none';},280);
+        }
+    }
+
+    function initCanvas(){
+        var ctx=idleCanvas.getContext('2d');
+        var dpr=window.devicePixelRatio||1;
+        var W=window.innerWidth,H=window.innerHeight;
+        idleCanvas.width=W*dpr;idleCanvas.height=H*dpr;ctx.scale(dpr,dpr);
+        particles=[];
+        for(var i=0;i<60;i++){particles.push({x:Math.random()*W,y:Math.random()*H,r:Math.random()*1.4+0.3,vx:(Math.random()-0.5)*0.18,vy:-Math.random()*0.18-0.04,a:Math.random()*0.35+0.05});}
+        function draw(){
+            ctx.clearRect(0,0,W,H);
+            for(var i=0;i<particles.length;i++){var p=particles[i];p.x+=p.vx;p.y+=p.vy;if(p.y<-5){p.y=H+5;p.x=Math.random()*W;}if(p.x<0)p.x=W;if(p.x>W)p.x=0;ctx.beginPath();ctx.arc(p.x,p.y,p.r,0,Math.PI*2);ctx.fillStyle='rgba(255,255,255,'+p.a+')';ctx.fill();}
+            animFrame=requestAnimationFrame(draw);
+        }
+        draw();
+    }
+
+    function showIdleOverlay(){isIdle=true;idleOverlay.style.display='block';idleOverlay.offsetHeight;idleOverlay.style.opacity=1;initCanvas();updateClock();pollNetInfo();pollIntv=setInterval(pollNetInfo,8000);}
+    function hideIdleOverlay(){isIdle=false;idleOverlay.style.opacity=0;setTimeout(function(){idleOverlay.style.display='none';},600);clearInterval(pollIntv);pollIntv=null;cancelAnimationFrame(animFrame);if(pollXHR&&pollXHR.abort)pollXHR.abort();pollShowtime();}
+
+    function updateClock(){
+        if(!isIdle)return;
+        var now=new Date(),h=now.getHours(),m=now.getMinutes(),s=now.getSeconds();
+        function pad(n){return n<10?'0'+n:n;}
+        idleTimeDom.innerHTML=pad(h)+'<span style="opacity:'+(s%2?'0.2':'0.85')+';margin:0 6px;font-weight:100">:</span>'+pad(m);
+        var days=['日','一','二','三','四','五','六'];
+        idleDateDom.textContent=(now.getMonth()+1)+'月'+now.getDate()+'日  星期'+days[now.getDay()]+'  ·  '+pad(s);
+        var tr=document.getElementById('idle_topright');
+        if(tr){tr.innerHTML='<span>'+pad(h)+':'+pad(m)+':'+pad(s)+'</span><span style="color:rgba(255,255,255,0.25);">|</span><span>SECURE SESSION</span>';}
+        setTimeout(updateClock,1000);
+    }
+
+    function pollNetInfo(){
+        var xhr=new XMLHttpRequest();xhr.open('GET','<%=luci.dispatcher.build_url("admin","fancontrol","modem_ctrl")%>?cfg=2_1&action=info&translate=1&'+Date.now(),true);
+        xhr.onreadystatechange=function(){if(xhr.readyState===4&&xhr.status===200){try{renderNetInfo(JSON.parse(xhr.responseText));}catch(e){renderNetInfo(null);}}};xhr.send();
+        var xhr2=new XMLHttpRequest();xhr2.open('GET','<%=luci.dispatcher.build_url("admin","fancontrol","devinfo")%>?'+Date.now(),true);
+        xhr2.onreadystatechange=function(){if(xhr2.readyState===4&&xhr2.status===200){try{renderSysInfo(JSON.parse(xhr2.responseText));}catch(e){}}};xhr2.send();
+    }
+
+    function getOpName(map){
+        /* 用 MCC/MNC 判运营商(最可靠)。早先 IMSI.substring(0,5) 精确匹配 '46003' 是错的:
+           IMSI '460300600…' 的 MNC 是第4-5位(=01 联通), 粗切出 '46030' 谁都不中 → 运营商空/图标错。 */
+        var mcc=String((map.MCC&&map.MCC.value)||'').replace(/[^0-9]/g,'');
+        var mnc=String((map.MNC&&map.MNC.value)||'').replace(/[^0-9]/g,'');
+        if(!mcc){var imsi=(map.IMSI&&map.IMSI.value)||'';if(imsi.length>=5){mcc=imsi.substring(0,3);mnc=imsi.substring(3,5);}}
+               /* s164 部分模组(移远 RM50x 经 QModem)的 MCC 带前导空格、ISP 给的是 PLMN 数字(46011): 先去非数字; 没 MCC 时按 ISP 的 PLMN 拆 */
+        if(!mcc){var pl=String((map.ISP&&map.ISP.value)||'');if(/^[ ]*[0-9]{5,6}[ ]*$/.test(pl)){pl=pl.replace(/[^0-9]/g,'');mcc=pl.substring(0,3);mnc=pl.substring(3,5);}}
+ if(mcc==='460'){var m=parseInt(mnc,10);
+            if(m===0||m===2||m===4||m===7||m===8)return '中国移动';
+            if(m===1||m===6||m===9)return '中国联通';
+            if(m===3||m===5||m===11)return '中国电信';
+            if(m===15)return '中国广电';}
+        var ISP=(map.ISP&&map.ISP.value)||'';
+        if(ISP==='4E2D56FD79FB52A8')return '中国移动';
+        if(ISP==='N-V ^u5')return '中国广电';
+        if(ISP==='CHN-CT'||ISP==='CT')return '中国电信';
+        if(ISP==='4E2D56FD8054901A')return '中国联通';
+        if(/^[ ]*[0-9]+[ ]*$/.test(String(ISP)))return '';
+ if(ISP)return ISP;
+ return '';
+    }
+
+    function renderNetInfo(arr){
+        var L=document.getElementById('idle_panel_left');
+        var card=document.getElementById('idle_cell_card');
+        var L=document.getElementById('idle_cell_left');
+        var C=document.getElementById('idle_cell_center');
+        var R=document.getElementById('idle_cell_right');
+        var modeWrap=document.getElementById('idle_cell_mode_wrap');
+        if(!Array.isArray(arr)||!arr.length){
+            if(card)card.style.display='none';
+            return;
+        }
+        var map={};arr.forEach(function(i){if(i&&i.key)map[i.key]=i;});
+
+        /* No data call means no cellular data to show: qmodem's get_info()
+         * returns after base_info when the SIM is not ready or
+         * connect_status != "Yes", so cell_info is absent and the card
+         * would render as an empty shell. connect_status is also missing
+         * outright when the modem never got as far as network_info, which
+         * this test treats as not dialed too. */
+        var connected=((map.connect_status&&map.connect_status.value)||'')
+            .toString().toLowerCase()==='yes';
+        if(!connected){
+            if(card)card.style.display='none';
+            return;
+        }
+        if(card)card.style.display='block';
+        var ISP=getOpName(map);
+        /* 后端给的制式 key 是 network_mode(值如 "LTE Mode"/"NR5G-SA Mode"),不是 Network Type → 制式药丸一直空。 */
+        var mode=(map.network_mode&&map.network_mode.value)||(map['Network Type']&&map['Network Type'].value)||(map['网络类型']&&map['网络类型'].value)||'';
+        var modeClass='';var modeText=mode;
+        if(mode.indexOf('NR')>=0){modeText='5G NR';modeClass='mode-5g';}
+        else if(mode.indexOf('LTE')>=0){modeText='4G LTE';modeClass='mode-4g';}
+        else if(mode){modeText=mode;}
+
+        /* 4G(LTE)下 MT5700 不给 RSRP, 只给 RxLev(同量纲 dBm)→ 不兜底的话信号环一直 0%、无 dBm。 */
+        var rsrp=map.RSRP||map['参考信号接收功率']||map.RxLev||map['接收电平'];
+        var rsrq=map.RSRQ||map['参考信号接收质量'];
+        var sinr=map.SINR||map['信噪比'];
+        var band=(map.Band&&map.Band.value)||(map['频段']&&map['频段'].value)||'';
+        var earfcn=(map.EARFCN&&map.EARFCN.value)||(map.NRARFCN&&map.NRARFCN.value)||'';
+        var pci=(map.PCI&&map.PCI.value)||(map['Physical Cell ID']&&map['Physical Cell ID'].value)||'';
+        var cellid=(map.CID&&map.CID.value)||(map['Cell ID']&&map['Cell ID'].value)||'';
+        var tac=(map.TAC&&map.TAC.value)||'';
+        var bw=(map.Bandwidth&&map.Bandwidth.value)||(map['带宽']&&map['带宽'].value)||'';
+        var temp=(map.Temperature&&map.Temperature.value)||(map['温度']&&map['温度'].value)||'';
+
+        var pct=0;var rsrpVal='';var rsrpRaw='';
+        if(rsrp&&rsrp.value){
+            var v=parseFloat(rsrp.value);rsrpVal=Math.round(v)+' dBm';rsrpRaw=Math.round(v);
+            var mn=parseFloat(rsrp.min_value||-110),mx=parseFloat(rsrp.max_value||-44);
+            pct=Math.round(100*(v-mn)/(mx-mn));pct=Math.max(0,Math.min(100,pct));
+        }
+        var bars=Math.ceil(pct/20);if(bars<1&&pct>0)bars=1;
+
+        if(modeWrap)modeWrap.innerHTML=modeText?'<span class="ic-mode-pill '+modeClass+'">'+modeText+'</span>':'';
+
+        /* 运营商图标:用和首页 hero 同一套真 PNG logo(/logo/*.png), 一眼区分、专业。
+           按运营商名匹配文件; 匹配不到再退回品牌色单字徽标(移/联/电/视)兜底。 */
+        var ispShort=ISP||'未知运营商';
+        var logoPng='';
+        if(ISP.indexOf('移动')>=0)logoPng='chinamobile';
+        else if(ISP.indexOf('联通')>=0)logoPng='chinaunicom';
+        else if(ISP.indexOf('电信')>=0)logoPng='ctc';
+        else if(ISP.indexOf('广电')>=0)logoPng='cbn';
+        var L1;
+        if(logoPng){
+            /* /logo/*.png 是 200x62 透明横图(图形+文字), 和首页 hero 同一套。按各家图形在原图里的
+               包围盒 EMB[x,y,w,h] 等比放大、居中裁进透明方块 —— 透明无底、无圆环。换 logo 文件要重量这组数。
+               尺寸和位置一律写成方块边长的百分比: 方块在 PC 是 64px, 手机断点缩到 48/42px, 早先按 64px 写死像素,
+               手机上图比框大一圈, 只露出左上角一截(裁边、看着变形)。百分比跟着框走, 任何断点都等比。 */
+            /* s77 按 alpha 通道重量: 旧表 cbn 宽写成 60(实为 62), 广电圆标右边被切 2px; 移动/电信也各差 1px */
+            var EMB={chinamobile:[0,0,63,62],ctc:[0,5,58,55],cbn:[16,0,62,61],chinaunicom:[93,0,60,35]};
+            var b=EMB[logoPng],st='';
+            if(b){var m=Math.max(b[2],b[3]),pc=function(v){return (v*100).toFixed(3)+'%';};
+                st='width:'+pc(200/m)+';height:'+pc(62/m)+';left:'+pc(-b[0]/m+(1-b[2]/m)/2)+';top:'+pc(-b[1]/m+(1-b[3]/m)/2);}
+            else{st='width:100%;height:100%;left:0;top:0;object-fit:contain';}
+            L1='<div class="ic-carrier-logo has-png" data-c="'+(ISP?ISP.charAt(0):'·')+'"><img style="'+st+'" src="/logo/'+logoPng+'.png" alt="'+ispShort+'" onerror="this.style.display=\'none\';this.parentNode.classList.add(\'op-fallback\');this.parentNode.textContent=(this.parentNode.getAttribute(\'data-c\')||\'·\')"></div>';
+        }else{
+            var logoChar='·',logoCls='';
+            if(ISP){logoChar=ISP.charAt(0);}
+            L1='<div class="ic-carrier-logo '+logoCls+'">'+logoChar+'</div>';
+        }
+        L1+='<div class="ic-carrier-name">'+ispShort+'</div>';
+        var bs='';for(var b=1;b<=5;b++)bs+='<span'+(b<=bars?' class="on"':'')+'></span>';
+        L1+='<div class="ic-bars">'+bs+'</div>';
+        L.innerHTML=L1;
+
+        var radius=56;var circ=2*Math.PI*radius;var off=circ*(1-pct/100);
+        var C1='<div class="ic-ring">';
+        C1+='<svg viewBox="0 0 130 130"><circle class="sr-bg" cx="65" cy="65" r="'+radius+'" fill="none" stroke-width="5"/>';
+        C1+='<circle class="sr-fg" cx="65" cy="65" r="'+radius+'" fill="none" stroke-width="5" stroke-dasharray="'+circ+'" stroke-dashoffset="'+off+'"/></svg>';
+        C1+='<div class="sr-center"><div class="sr-pct">'+pct+'<sup>%</sup></div><div class="sr-label">SIGNAL</div>';
+        if(rsrpVal)C1+='<div class="sr-rsrp">'+rsrpVal+'</div>';
+        C1+='</div></div>';
+        C.innerHTML=C1;
+
+        var R1='';
+        if(rsrq&&rsrq.value)R1+='<div class="ic-chip acc-green"><span class="cl">RSRQ</span><span class="cv">'+rsrq.value+' dB</span></div>';
+        if(sinr&&sinr.value)R1+='<div class="ic-chip acc-amber"><span class="cl">SINR</span><span class="cv">'+sinr.value+' dB</span></div>';
+        if(band)R1+='<div class="ic-chip acc-purple"><span class="cl">频段</span><span class="cv">B'+band+'</span></div>';
+        if(bw)R1+='<div class="ic-chip acc-cyan"><span class="cl">带宽</span><span class="cv">'+bw+'</span></div>';
+        if(pci)R1+='<div class="ic-chip acc-pink"><span class="cl">PCI</span><span class="cv">'+pci+'</span></div>';
+        if(earfcn)R1+='<div class="ic-chip"><span class="cl">ARFCN</span><span class="cv">'+earfcn+'</span></div>';
+        if(cellid)R1+='<div class="ic-chip"><span class="cl">CELL ID</span><span class="cv" style="font-size:10px">'+cellid+'</span></div>';
+        if(tac)R1+='<div class="ic-chip"><span class="cl">TAC</span><span class="cv">'+tac+'</span></div>';
+        if(temp)R1+='<div class="ic-chip acc-red"><span class="cl">模组温度</span><span class="cv">'+temp+'</span></div>';
+        R.innerHTML=R1;
+    }
+
+    function renderSysInfo(d){
+        if(!d)return;
+        var modelEl=document.getElementById('idle_model');
+        var brandModel=document.getElementById('idle_brand_model');
+        var m=d["设备型号"];if(m&&typeof m==='object')m=m.name||'';
+        // idle_brand_model is the top-left label and always exists; idle_model
+        // has no element in this template, so fill the label before the block
+        // below, which never runs.
+        if(brandModel)brandModel.textContent=m||'';
+        if(modelEl){
+            var name=m?'Mwrt-'+m:'Mwrt-1139-24';
+            modelEl.innerHTML='<span style="width:36px;height:1px;background:linear-gradient(90deg,transparent,rgba(255,255,255,0.3));"></span><span style="font-size:10px;color:rgba(255,255,255,0.45);letter-spacing:6px;text-transform:uppercase;font-weight:500;">'+name+'</span><span style="width:36px;height:1px;background:linear-gradient(90deg,rgba(255,255,255,0.3),transparent);"></span>';
+        }
+        var stEl=document.getElementById('idle_status');if(stEl){var p='';
+            if(d["WAN状态"]){var on=d["WAN状态"]==="已连接";p+='<div class="idle-status-pill"><span class="sp-dot" style="background:'+(on?'#34d399':'#f87171')+';color:'+(on?'#34d399':'#f87171')+'"></span>'+(on?'已联网':'未联网')+'</div>';}
+            if(d["运行时间"])p+='<div class="idle-status-pill"><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12,6 12,12 16,14"/></svg>'+d["运行时间"]+'</div>';
+            if(d["在线设备数"])p+='<div class="idle-status-pill"><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 12l2 2 4-4"/><circle cx="12" cy="12" r="10"/></svg>'+d["在线设备数"]+' 台联网</div>';
+            if(d["WAN_IP"]&&d["WAN_IP"]!=="未知")p+='<div class="idle-status-pill" style="font-family:\'SF Mono\',Menlo,monospace"><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="2" y1="12" x2="22" y2="12"/><path d="M12 2a15.3 15.3 0 014 10 15.3 15.3 0 01-4 10 15.3 15.3 0 01-4-10 15.3 15.3 0 014-10z"/></svg>'+d["WAN_IP"]+'</div>';
+            stEl.innerHTML=p;
+        }
+        var grid=document.getElementById('idle_grid');if(!grid)return;var g='';
+        if(d["CPU占用"])g+='<div class="idle-grid-item" style="color:#a78bfa"><div class="ig-icon"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="4" y="4" width="16" height="16" rx="2"/><rect x="9" y="9" width="6" height="6"/><line x1="9" y1="1" x2="9" y2="4"/><line x1="15" y1="1" x2="15" y2="4"/><line x1="9" y1="20" x2="9" y2="23"/><line x1="15" y1="20" x2="15" y2="23"/><line x1="20" y1="9" x2="23" y2="9"/><line x1="20" y1="15" x2="23" y2="15"/><line x1="1" y1="9" x2="4" y2="9"/><line x1="1" y1="15" x2="4" y2="15"/></svg></div><div class="ig-v">'+d["CPU占用"]+'<span style="font-size:10px;opacity:0.6">%</span></div><div class="ig-l">CPU</div></div>';
+        if(d["剩余内存百分比"])g+='<div class="idle-grid-item" style="color:#22d3ee"><div class="ig-icon"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><line x1="3" y1="9" x2="21" y2="9"/><line x1="3" y1="15" x2="21" y2="15"/><line x1="9" y1="3" x2="9" y2="21"/></svg></div><div class="ig-v">'+d["剩余内存百分比"]+'<span style="font-size:10px;opacity:0.6">%</span></div><div class="ig-l">MEM</div></div>';
+        if(d["设备温度"]&&d["设备温度"]!=="未知")g+='<div class="idle-grid-item" style="color:#fbbf24"><div class="ig-icon"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 14.76V3.5a2.5 2.5 0 00-5 0v11.26a4.5 4.5 0 105 0z"/></svg></div><div class="ig-v">'+d["设备温度"]+'<span style="font-size:10px;opacity:0.6">℃</span></div><div class="ig-l">TEMP</div></div>';
+        if(d["风扇转速百分比"]&&parseInt(d["风扇转速百分比"])>0){var fp=d["风扇转速百分比"];g+='<div class="idle-grid-item" style="color:#22d3ee"><div class="ig-icon idle-fan-spin"><svg width="18" height="18" viewBox="0 0 100 100" fill="currentColor"><circle cx="50" cy="50" r="6" opacity="0.6"/><path d="M50 44C50 32 60 22 68 28C76 34 68 44 56 46Z" opacity="0.85"/><path d="M56 50C68 50 78 60 72 68C66 76 56 68 54 56Z" opacity="0.85"/><path d="M50 56C50 68 40 78 32 72C24 66 32 56 44 54Z" opacity="0.85"/><path d="M44 50C32 50 22 40 28 32C34 24 44 32 46 44Z" opacity="0.85"/></svg></div><div class="ig-v">'+fp+'<span style="font-size:10px;opacity:0.6">%</span></div><div class="ig-l">FAN</div></div>';}
+        if(d["系统负载"]){var ld=(d["系统负载"]||'').split(' /')[0]||(d["系统负载"]||'').split('/')[0];g+='<div class="idle-grid-item" style="color:#60a5fa"><div class="ig-icon"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 12h-4l-3 9L9 3l-3 9H2"/></svg></div><div class="ig-v" style="font-size:13px">'+ld.trim()+'</div><div class="ig-l">LOAD</div></div>';}
+        if(d["存储总量"]){var st=d["存储使用"]||d["存储总量"]||'';g+='<div class="idle-grid-item" style="color:#f472b6"><div class="ig-icon"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 17H2a3 3 0 003-3V7a3 3 0 013-3h8a3 3 0 013 3v7a3 3 0 003 3z"/><line x1="6" y1="11" x2="10" y2="11"/></svg></div><div class="ig-v" style="font-size:11px">'+st+'</div><div class="ig-l">DISK</div></div>';}
+        grid.innerHTML=g;
+    }
+
+    idleOverlay.addEventListener('click',function(){});
+    pollShowtime();
+})();
+</script>
+
+<!-- MWRT -->
+<div id="init-overlay" style="display:none;position:fixed;z-index:999999;top:0;left:0;width:100vw;height:100vh;background:rgba(0,0,0,0.90);color:#fff;flex-direction:column;justify-content:center;align-items:center;font-size:24px;">
+    <div class="argon-spinner"></div>
+    <span style="margin-top:24px;">初始化...</span>
+    <span style="margin-top:16px;">大约占用2分钟时间,完成后登录即可</span>
+    <span id="argon-init-dot" style="margin-top:24px;font-size:20px;color:#ccc;">正在初始化中,请勿刷新页面！<span class="dot">.</span><span class="dot">.</span><span class="dot">.</span></span>
+    <div style="width:380px;max-width:90vw;margin-top:40px;">
+        <div style="background:#333;border-radius:8px;overflow:hidden;height:18px;">
+            <div id="argon-progress-bar" style="background:#4fc3f7;width:0;height:18px;transition:width 0.2s;"></div>
+        </div>
+    </div>
+    <div id="argon-progress-text" style="margin-top:18px;font-size:18px;color:#80d6ff;">
+        正在初始化...
+    </div>
+    <div style="position:absolute;bottom:32px;left:0;width:100vw;text-align:center;font-size:16px;color:#a0a0a0;letter-spacing:1px;">
+        Power by Manper-zcy Mwrt
+    </div>
+</div>
+<style>
+.argon-spinner {
+    margin-bottom: 32px;
+    width: 48px;
+    height: 48px;
+    border: 6px solid #4fc3f7;
+    border-right-color: transparent;
+    border-radius: 50%;
+    animation: argon-spin 1s linear infinite;
+}
+@keyframes argon-spin {
+    100% { transform: rotate(360deg); }
+}
+#argon-init-dot .dot {
+    opacity: 0.2;
+    animation: dotblink 1.4s infinite;
+}
+#argon-init-dot .dot:nth-child(1) { animation-delay: 0s;}
+#argon-init-dot .dot:nth-child(2) { animation-delay: 0.2s;}
+#argon-init-dot .dot:nth-child(3) { animation-delay: 0.4s;}
+@keyframes dotblink {
+    0% { opacity: 0.2;}
+    20% { opacity: 1;}
+    100% { opacity: 0.2;}
+}
+</style>
+<script>
+const progressSteps = [
+  { time: 0, text: "执行AT命令AT^SETAUTODIAL=1,1..." },
+  { time: 8, text: "执行AT命令AT^SETAUTODIAL=0..." },
+  { time: 15, text: "执行AT命令AT^SETAUTODIAL=1,1..." },
+  { time: 30, text: "执行AT命令AT^TDPMCFG=0,0,0,0..." },
+  { time: 60, text: "执行AT命令AT^SETMODE=4..." },
+  { time: 110, text: "正在软重启Mwrt..." }
+];
+const totalTime = 120; // 秒
+
+function animateProgress() {
+    const progressBar = document.getElementById('argon-progress-bar');
+    const progressText = document.getElementById('argon-progress-text');
+    const overlay = document.getElementById('init-overlay');
+    const start = Date.now();
+    let lastText = "";
+
+    function update() {
+        const elapsed = (Date.now() - start) / 1000;
+        const percent = Math.min(100, (elapsed / totalTime) * 100);
+        progressBar.style.width = percent + "%";
+
+        let curText = progressSteps[0].text;
+        for(let i=0;i<progressSteps.length;i++){
+            if(elapsed >= progressSteps[i].time) curText = progressSteps[i].text;
+        }
+        if(curText !== lastText) {
+            progressText.textContent = curText;
+            lastText = curText;
+        }
+
+        if(elapsed < totalTime) {
+            requestAnimationFrame(update);
+        } else {
+            overlay.style.display = "none";
+            window.location.href = "http://192.168.88.1";
+        }
+    }
+    update();
+}
+</script>
+
+<!-- ===== MWRT 导航增强:PC侧栏折叠 + 移动端底部快捷栏 ===== -->
+<style>
+/* ---------- PC 端:贴边胶囊折叠按钮 ---------- */
+#mwrt-sb-toggle{
+  position:fixed;top:50%;left:15rem;transform:translate(-100%,-50%);
+  width:26px;height:56px;z-index:1030;cursor:pointer;
+  display:none;align-items:center;justify-content:center;
+  background:rgba(0,0,0,.16);color:#fff;
+  border-radius:10px 0 0 10px;
+  transition:left .28s cubic-bezier(.4,0,.2,1),transform .15s,background .2s;
+  -webkit-tap-highlight-color:transparent;
+}
+#mwrt-sb-toggle:hover{background:rgba(0,0,0,.28)}
+#mwrt-sb-toggle:active{transform:translate(-100%,-50%) scale(.94)}
+#mwrt-sb-toggle svg{width:14px;height:14px;transition:transform .28s cubic-bezier(.4,0,.2,1)}
+@media (min-width:1200px){#mwrt-sb-toggle{display:flex}}
+body.mwrt-sb-collapsed .main-left{
+  width:0!important;min-width:0!important;overflow:hidden!important;opacity:0;
+  transition:width .28s cubic-bezier(.4,0,.2,1),opacity .2s;
+}
+body:not(.mwrt-sb-collapsed) .main-left{transition:width .28s cubic-bezier(.4,0,.2,1),opacity .2s}
+/* 折叠态:吸附屏幕左缘,改为右侧圆角的小耳朵,箭头翻转 */
+body.mwrt-sb-collapsed #mwrt-sb-toggle{left:0;transform:translate(0,-50%);border-radius:0 10px 10px 0;background:var(--primary)}
+body.mwrt-sb-collapsed #mwrt-sb-toggle:active{transform:translate(0,-50%) scale(.94)}
+body.mwrt-sb-collapsed #mwrt-sb-toggle svg{transform:rotate(180deg)}
+
+/* ---------- 移动端:底部快捷导航栏 ----------
+   2026-09-25 重做。原来是一整条饱和品牌蓝 + 顶部一根白色指示条:
+   大面积高饱和色和内容区的浅色硬切,指示条又把视线往上拽,选中与未选中只靠
+   白字的透明度区分(.66 vs 1) —— 对比太弱,整体看着廉价。
+
+   改成扁平做法(iOS/Material 3 那一路): 底色跟内容区同一套 --surface,
+   顶边只留一根 --hairline;品牌色不再铺底,只落在**选中项**的图标/文字和它
+   身后那枚淡色药丸上。层级靠颜色和字重表达,不靠色块面积。
+
+   几个刻意的选择:
+     · 色值全部走 aurora 的 token(--surface/--hairline/--brand/--text-muted),
+       每个都带一份写死的兜底 —— 这段 CSS 在 footer 内联,比 aurora 的表更早
+       生效,万一 token 没解析出来也不会变成透明或黑块。
+     · 毛玻璃放在 @supports 里当增强:不支持 backdrop-filter 的浏览器拿到的是
+       上面那条不透明底色,不会出现半透明糊成一片的情况。
+     · 深色**不用** prefers-color-scheme —— 系统深色但 LuCI 处在浅色时,媒体
+       查询会把导航刷黑,和页面对不上。只认后台自己的两个开关,见下面「深色」
+       那段的说明。
+     · 药丸用 ::before 垫在图标后面,并给 svg/span 抬 z-index;transform 里
+       始终带上 translateX(-50%),否则动画到一半会横向跳。 */
+#mwrt-bottomnav{
+  position:fixed;left:0;right:0;bottom:0;z-index:1040;display:none;
+  grid-template-columns:repeat(5,1fr);align-items:stretch;
+  background:var(--surface,#fff);
+  border-top:1px solid var(--hairline,rgba(16,24,40,.13));
+  box-shadow:0 -1px 20px -8px rgba(16,24,40,.18);
+  padding-bottom:env(safe-area-inset-bottom,0);
+}
+@supports ((backdrop-filter:blur(1px)) or (-webkit-backdrop-filter:blur(1px))){
+  #mwrt-bottomnav{
+    background:color-mix(in srgb,var(--surface,#fff) 82%,transparent);
+    -webkit-backdrop-filter:saturate(180%) blur(18px);
+    backdrop-filter:saturate(180%) blur(18px);
+  }
+}
+@media (max-width:768px){
+  #mwrt-bottomnav{display:grid}
+  /* s63: 底栏实测高 51px(图标 22 + 上 8 下 7 + 文字行 + 1px border), 原来写死
+     64px 预留比它高 13px, 多出来的那条露出 body 底色, 夹在内容和底栏之间成一条缝
+     (用户反馈的 .main 和导航栏之间有缝)。改成 52px(51 实测 + 1px 容差, 防止内容
+     贴着底栏压线), 缝消失; 安全区照旧再叠底部 inset。 */
+  body.mwrt-has-bottomnav{padding-bottom:calc(52px + env(safe-area-inset-bottom,0px))}
+}
+#mwrt-bottomnav a{
+  position:relative;display:flex;flex-direction:column;align-items:center;justify-content:center;
+  gap:3px;padding:8px 2px 7px;text-decoration:none;
+  color:var(--text-muted,#6b7280);font-size:10px;line-height:1;font-weight:500;
+  letter-spacing:.01em;
+  -webkit-tap-highlight-color:transparent;transition:color .18s;
+}
+/* 选中项身后的品牌淡色药丸 */
+#mwrt-bottomnav a::before{
+  content:"";position:absolute;top:4px;left:50%;
+  transform:translateX(-50%) scale(.8);
+  width:44px;height:28px;border-radius:999px;
+  background:var(--brand-subtle,#e6f2fa);
+  opacity:0;transition:opacity .2s,transform .2s;pointer-events:none;
+}
+#mwrt-bottomnav a svg{
+  position:relative;z-index:1;
+  width:22px;height:22px;stroke-width:1.9;
+  transition:transform .18s;
+}
+#mwrt-bottomnav a span{position:relative;z-index:1}
+#mwrt-bottomnav a:active svg{transform:scale(.9)}
+#mwrt-bottomnav a.mwrt-nav-active{color:var(--brand,#0086bf);font-weight:600}
+#mwrt-bottomnav a.mwrt-nav-active::before{opacity:1;transform:translateX(-50%) scale(1)}
+#mwrt-bottomnav a.mwrt-nav-active svg{stroke-width:2.1}
+@media (prefers-reduced-motion:reduce){
+  #mwrt-bottomnav a,#mwrt-bottomnav a::before,#mwrt-bottomnav a svg{transition:none}
+}
+/* ---------- 深色 ----------
+   原来这里写的是 `.darkmode #mwrt-bottomnav`。**那个类在这套皮肤里根本不存在**
+   (cascade.css 和 aurora 两张表里 `.darkmode` 命中数都是 0),所以那条规则从来
+   没生效过 —— 深色页面上导航一直是亮白的一条。两个真正的深色来源:
+
+     1) html[data-darkmode="true"] —— aurora 自己的开关(mwrt-aurora-boot.js
+        写的属性)。当前 FORCE_LIGHT=true 锁在浅色,所以平时不命中;哪天放开
+        "跟随系统",这条就自动接上。
+     2) body:has(#maincontent > .container > .P) —— zmode/modem_info.htm 这类
+        自带日夜切换的整页视图(容器 .P,默认深色,加 .L 才是浅色,记在
+        localStorage 的 mrt-t)。导航是 .P 的兄弟节点、不在它里面,所以不会
+        被它的样式带着走,必须在这里单独判。这也是今天唯一真正出现的深色场景。
+        选择器与 chrome.css §15/§15b 同一套,那边改了这里要跟着改。
+
+   色值:底色比 .P 的 #0b0d14 亮一档,让导航像浮在内容之上而不是糊成一体;
+   药丸换成一层极淡的白 —— --brand-subtle 是浅色系的值,直接用在深底上是一块
+   突兀的亮斑。 */
+html[data-darkmode="true"] #mwrt-bottomnav,
+body:has(#maincontent > .container > .P):not(:has(#maincontent > .container > .P.L)) #mwrt-bottomnav{
+  background:#151922;
+  border-top:1px solid rgba(255,255,255,.10);
+  box-shadow:0 -1px 20px -8px rgba(0,0,0,.6);
+}
+@supports ((backdrop-filter:blur(1px)) or (-webkit-backdrop-filter:blur(1px))){
+  html[data-darkmode="true"] #mwrt-bottomnav,
+  body:has(#maincontent > .container > .P):not(:has(#maincontent > .container > .P.L)) #mwrt-bottomnav{
+    background:rgba(21,25,34,.82);
+  }
+}
+html[data-darkmode="true"] #mwrt-bottomnav a,
+body:has(#maincontent > .container > .P):not(:has(#maincontent > .container > .P.L)) #mwrt-bottomnav a{
+  color:rgba(255,255,255,.60);
+}
+html[data-darkmode="true"] #mwrt-bottomnav a::before,
+body:has(#maincontent > .container > .P):not(:has(#maincontent > .container > .P.L)) #mwrt-bottomnav a::before{
+  background:rgba(255,255,255,.12);
+}
+html[data-darkmode="true"] #mwrt-bottomnav a.mwrt-nav-active,
+body:has(#maincontent > .container > .P):not(:has(#maincontent > .container > .P.L)) #mwrt-bottomnav a.mwrt-nav-active{
+  color:#fff;
+}
+</style>
+
+<!-- PC端:贴边折叠按钮 -->
+<div id="mwrt-sb-toggle" title="折叠/展开菜单">
+  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"></polyline></svg>
+</div>
+
+<!-- 移动端:底部快捷导航
+
+     2026-09-25 图标按各自入口的内容重画。原来那套有三处语义错配:
+       · 蜂窝用的是 WiFi 弧线 —— 那是无线的符号,和隔壁「网络」撞概念,
+         偏偏又不是蜂窝。换成信号格,和 WiFi 一眼就分得开。
+       · 系统用的是齿轮 —— 齿轮=设置,可这个入口去的是「状态总览」;
+         而且齿轮那条 path 有十几段曲线,缩到 22px 糊成一坨。换成芯片,
+         既对得上「系统」,也对得上这页讲的硬件状态,笔画还干净。
+       · 首页用的是四宫格 —— 那是「全部功能」的符号。房子才是首页,
+         腾出来的四宫格正好给「更多」(点开是整个侧栏抽屉)。
+     网络原来是地球(经线椭圆+赤道+外圆)。22px 上那三层线叠在中间是一团黑,
+     换成拓扑图(一上两下三个节点 + 汇流线)—— 小尺寸下笔画分得开,而且这个
+     入口讲的是接口/网段,拓扑比地球更准。
+
+     五个图标统一口径,换任何一个都要照着对:
+       viewBox 一律 0 0 24 24;描边式,不用填充;
+       线宽走 CSS(常态 1.9 / 选中 2.1),svg 里不写死;
+       光学外框对齐 —— 算的时候要把圆头描边两端各外扩的约 0.95 单位算进去,
+       不算就会得出"信号格和芯片一样大"的错结论(实际小一圈);
+       内部空腔别小于 ~3.6 单位:1.9 的描边在 22px 上约 1.74px,
+       再小的空腔会被两侧描边糊成实心块(芯片内芯从 3.2 放到 3.8 就是为这个)。
+     svg 一律 aria-hidden —— 链接的可读名字由后面那个 <span> 提供,
+     图标再报一遍就是重复噪音。
+
+     验证姿势:别指望截图里的导航条。headless 下 position:fixed 会被整体上移
+     约 87px(拿一条纯红 fixed bar 做对照实验坐实过),按 bottom:0 去裁只会裁到
+     空白背景,看着像"导航没渲染"。要么用同源 iframe 读 getBoundingClientRect
+     (那个是准的),要么把这几个 svg 单独摆一张 proof sheet 按 22px / 4x 两种
+     尺寸渲染 —— 22px 下看糊不糊,4x 下看几何对不对。 -->
+<nav id="mwrt-bottomnav" aria-label="快捷导航">
+  <a href="<%=url('admin/modeminfo')%>" data-match="modeminfo">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M3.6 10.6 12 4l8.4 6.6"></path><path d="M6.2 8.6v10.6a1.6 1.6 0 0 0 1.6 1.6h8.4a1.6 1.6 0 0 0 1.6-1.6V8.6"></path><path d="M9.9 20.8v-5.2h4.2v5.2"></path></svg>
+    <span>首页</span>
+  </a>
+  <a href="<%=url('admin/modem/modem')%>" data-match="modem">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M4.2 19v-3.6"></path><path d="M9.4 19v-6.8"></path><path d="M14.6 19V8.6"></path><path d="M19.8 19V4.6"></path></svg>
+    <span>蜂窝</span>
+  </a>
+  <a href="<%=url('admin/network')%>" data-match="network">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><rect x="9.4" y="3.5" width="5.2" height="5.2" rx="1"></rect><rect x="3.5" y="15.3" width="5.2" height="5.2" rx="1"></rect><rect x="15.3" y="15.3" width="5.2" height="5.2" rx="1"></rect><path d="M6.1 15.3V13.7a.9.9 0 0 1 .9-.9H17a.9.9 0 0 1 .9.9v1.6"></path><path d="M12 12.8V8.7"></path></svg>
+    <span>网络</span>
+  </a>
+  <a href="<%=url('admin/status/overview')%>" data-match="status">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><rect x="5.6" y="5.6" width="12.8" height="12.8" rx="2.6"></rect><rect x="10.1" y="10.1" width="3.8" height="3.8" rx=".9"></rect><path d="M9.4 2.8v2.8"></path><path d="M14.6 2.8v2.8"></path><path d="M9.4 18.4v2.8"></path><path d="M14.6 18.4v2.8"></path><path d="M2.8 9.4h2.8"></path><path d="M2.8 14.6h2.8"></path><path d="M18.4 9.4h2.8"></path><path d="M18.4 14.6h2.8"></path></svg>
+    <span>系统</span>
+  </a>
+  <a href="#" id="mwrt-nav-more" role="button">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><rect x="4.4" y="4.4" width="6" height="6" rx="1.7"></rect><rect x="13.6" y="4.4" width="6" height="6" rx="1.7"></rect><rect x="4.4" y="13.6" width="6" height="6" rx="1.7"></rect><rect x="13.6" y="13.6" width="6" height="6" rx="1.7"></rect></svg>
+    <span>更多</span>
+  </a>
+</nav>
+<script>
+(function(){
+  // ---------- PC 侧栏折叠 ----------
+  var KEY='mwrt_sb_collapsed';
+  try{ if(localStorage.getItem(KEY)==='1') document.body.classList.add('mwrt-sb-collapsed'); }catch(e){}
+  var tg=document.getElementById('mwrt-sb-toggle');
+  if(tg){
+    tg.addEventListener('click',function(){
+      var c=document.body.classList.toggle('mwrt-sb-collapsed');
+      try{ localStorage.setItem(KEY,c?'1':'0'); }catch(e){}
+      // 通知图表等监听 resize 的组件重新布局
+      setTimeout(function(){ try{ window.dispatchEvent(new Event('resize')); }catch(e){} },300);
+    });
+  }
+
+  // ---------- 移动端底部导航:高亮当前页 + “更多”展开侧栏 ----------
+  var bn=document.getElementById('mwrt-bottomnav');
+  if(bn){
+    document.body.classList.add('mwrt-has-bottomnav');
+    var path='';
+    try{ path=(Array.isArray(luciLocation)?luciLocation.join('/'):String(luciLocation||'')); }catch(e){ path=location.pathname; }
+    var best=null;
+    bn.querySelectorAll('a[data-match]').forEach(function(a){
+      var m=a.getAttribute('data-match');
+      if(m && path.indexOf(m)!==-1){ if(!best) best=a; }
+    });
+    if(best) best.classList.add('mwrt-nav-active');
+    var more=document.getElementById('mwrt-nav-more');
+    if(more){
+      more.addEventListener('click',function(ev){
+        ev.preventDefault();
+        // 复用 Argon 原生侧栏抽屉:点击隐藏的 .showSide 触发器
+        var ss=document.querySelector('.showSide');
+        if(ss){ ss.click(); }
+      });
+    }
+  }
+})();
+</script>
+</body>
+</html>

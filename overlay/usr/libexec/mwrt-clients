@@ -524,23 +524,45 @@ local function run(nocache)
     -- ------------------------------------------------------------ 租约 / 名字
     local now = now_epoch()
     local lease_by_mac = {}     -- mac -> { ip=, valid= }
-    local names = {}
-    do
-        local lf = rd(TMP .. "/dhcp.leases") or ""
-        for line in lf:gmatch("[^\r\n]+") do
+    local names, names_by_ip = {}, {}
+    local dh = parse_uci(ETC .. "/config/dhcp")
+    local leasefiles, hostfiles = { TMP .. "/dhcp.leases" }, { ETC .. "/hosts" }
+    local function configured_path(p)
+        if type(p) == "string" and p:sub(1, 1) == "/" and not p:find("..", 1, true) then return ROOT .. p end
+    end
+    for _, s in ipairs(dh) do
+        if s.type == "dnsmasq" then
+            local p = configured_path(s.opt.leasefile)
+            if p then leasefiles[#leasefiles + 1] = p end
+            for _, h in ipairs(s.list.addnhosts or {}) do
+                local hp = configured_path(h)
+                if hp then hostfiles[#hostfiles + 1] = hp end
+            end
+        end
+    end
+    for _, file in ipairs(leasefiles) do
+        for line in (rd(file) or ""):gmatch("[^\r\n]+") do
             local exp, mac, ip, host = line:match("^(%d+)%s+(%x%x:%x%x:%x%x:%x%x:%x%x:%x%x)%s+(%d+%.%d+%.%d+%.%d+)%s+(%S+)")
             if exp then
                 mac = mac:lower()
                 local e = tonumber(exp) or 0
                 local valid = (e == 0) or (e > now)
-                lease_by_mac[mac] = { ip = ip, valid = valid }
-                if host ~= "*" then names[mac] = u8clean(host, 63) end
+                local previous = lease_by_mac[mac]
+                if not previous or valid then
+                    lease_by_mac[mac] = { ip = ip, valid = valid }
+                    names[mac] = valid and host ~= "*" and u8clean(host, 63) or nil
+                end
             end
+        end
+    end
+    for _, file in ipairs(hostfiles) do
+        for line in (rd(file) or ""):gmatch("[^\r\n]+") do
+            local ip, host = line:match("^%s*(%d+%.%d+%.%d+%.%d+)%s+([^%s#]+)")
+            if ip and ip ~= LANIP and host ~= "localhost" and host ~= "*" then names_by_ip[ip] = u8clean(host, 63) end
         end
     end
     local gw_other = false      -- dhcp.lan 把网关(option 3)指向了别处, 或关掉了网关下发
     do
-        local dh = parse_uci(ETC .. "/config/dhcp")
         for _, s in ipairs(dh) do
             if s.type == "host" and s.opt.name and s.opt.name ~= "" and s.opt.mac then
                 for m in s.opt.mac:gmatch("%x%x:%x%x:%x%x:%x%x:%x%x:%x%x") do
@@ -695,7 +717,7 @@ local function run(nocache)
         end
         local ip = best or (ls and ls.valid and ls.ip) or ""
         clients[#clients + 1] = {
-            mac = mac, ip = ip, name = names[mac] or "", type = "wifi", port = w.ap.ifname, band = w.ap.band,
+            mac = mac, ip = ip, name = names[mac] or names_by_ip[ip] or "", type = "wifi", port = w.ap.ifname, band = w.ap.band,
             rssi = w.st.rssi, tx_rate = w.st.tx_rate, rx_rate = w.st.rx_rate, online_s = online_of(mac, nil, false),
             guest = w.ap.guest,
         }
@@ -704,7 +726,7 @@ local function run(nocache)
     for mac, c in pairs(wired_cand) do
         if not wifi_by_mac[mac] and gw_ok[mac] then
             clients[#clients + 1] = {
-                mac = mac, ip = c.ip, name = names[mac] or "", type = "wired", port = c.port, band = "wired",
+                mac = mac, ip = c.ip, name = names[mac] or names_by_ip[c.ip] or "", type = "wired", port = c.port, band = "wired",
                 online_s = online_of(mac, c.ip, gw_ok[mac] ~= "sticky"), guest = false,
             }
             seen_now[mac] = true

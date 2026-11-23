@@ -30,7 +30,7 @@ run('fwtool', '-i', 'metadata.json', str(base))
 run('unsquashfs', '-force', '-no-progress', '-pf', 'base.pseudo', 'root')
 end = b'# START OF DATA - DO NOT MODIFY\n#\n'
 changes = {p.relative_to(repo/'overlay').as_posix().encode():p.read_bytes() for p in (repo/'overlay').rglob('*') if p.is_file()}
-assert set(changes) == {b'usr/libexec/mwrt-clients', b'www/luci-static/resources/mwrt-topo.js'}
+assert set(changes) == {b'usr/libexec/mwrt-clients', b'www/luci-static/resources/mwrt-topo.js', b'usr/bin/footer.htm', b'www/luci-static/resources/view/system/flash.js'}
 with open('base.pseudo','rb') as src, open('patched.pseudo','wb') as dst:
     header = bytearray()
     while not header.endswith(end):
@@ -52,7 +52,7 @@ with open('base.pseudo','rb') as src, open('patched.pseudo','wb') as dst:
         name = line.split(b' ',1)[0]
         if name in changes: dst.write(changes[name])
 run('mksquashfs','-','patched.root','-pf','patched.pseudo','-noappend','-comp','xz','-b','262144','-no-xattrs','-no-progress','-processors','4')
-image = out/'Mwrt-h5000m-tf-1166-24-topology-v1.bin'
+image = out/'Mwrt-h5000m-tf-1166-24-topology-v2.bin'
 with tarfile.open(base) as src, tarfile.open(image,'w',format=tarfile.GNU_FORMAT) as dst:
     for item in src:
         if item.name==rootname:
